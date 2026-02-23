@@ -1,0 +1,715 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Flowstate API",
+    "description": "Property valuation and underwriting API for real estate investors. Get property data, comparables, ARV calculations, and investment recommendations.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Flowstate Support",
+      "url": "https://flowstate.homes"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.flowstate.homes",
+      "description": "Production"
+    },
+    {
+      "url": "http://localhost:8787",
+      "description": "Local Development"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Health check",
+        "description": "Returns the health status of the API. No authentication required.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "API is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2024-02-17T12:00:00.000Z"
+                    },
+                    "version": {
+                      "type": "string",
+                      "example": "1.0.0"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/db": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Database health check",
+        "description": "Returns the health status of the database connection. No authentication required.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Database is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analyze": {
+      "post": {
+        "tags": ["Analysis"],
+        "summary": "Analyze property",
+        "description": "Complete property analysis including property lookup, comparables, ARV calculation, and investment recommendations.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeRequest"
+              },
+              "examples": {
+                "simple": {
+                  "summary": "Simple address lookup",
+                  "value": {
+                    "address": "123 Main St, Tampa, FL 33607"
+                  }
+                },
+                "advanced": {
+                  "summary": "Advanced analysis with custom parameters",
+                  "value": {
+                    "address": "123 Main St, Tampa, FL 33607",
+                    "searchOptions": {
+                      "radiusMiles": 1,
+                      "maxComps": 15,
+                      "monthsBack": 12
+                    },
+                    "buybox": {
+                      "rehabLevelIndex": 2,
+                      "closingCostsPercent": 10,
+                      "carryingCostsPercent": 5,
+                      "wholesaleFee": 10000
+                    },
+                    "enrichment": {
+                      "permits": true,
+                      "floodZone": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Analysis completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyzeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Property not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analyze/defaults": {
+      "get": {
+        "tags": ["Analysis"],
+        "summary": "Get default parameters",
+        "description": "Get default values for appraisal rules and buybox parameters.",
+        "responses": {
+          "200": {
+            "description": "Default parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefaultsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API key from your dashboard"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "string",
+            "example": "Property not found"
+          },
+          "code": {
+            "type": "string",
+            "example": "NOT_FOUND"
+          }
+        }
+      },
+      "AnalyzeRequest": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "Full property address",
+            "example": "123 Main St, Tampa, FL 33607"
+          },
+          "streetAddress": {
+            "type": "string",
+            "description": "Street address only"
+          },
+          "city": {
+            "type": "string",
+            "description": "City name"
+          },
+          "state": {
+            "type": "string",
+            "description": "State code (e.g., FL)"
+          },
+          "zipCode": {
+            "type": "string",
+            "description": "5-digit ZIP code"
+          },
+          "propertyId": {
+            "type": "string",
+            "description": "Property ID from a previous lookup"
+          },
+          "searchOptions": {
+            "type": "object",
+            "properties": {
+              "radiusMiles": {
+                "type": "number",
+                "description": "Search radius for comparables",
+                "default": 1
+              },
+              "maxComps": {
+                "type": "integer",
+                "description": "Maximum comparables to return",
+                "default": 15
+              },
+              "monthsBack": {
+                "type": "integer",
+                "description": "How far back to search for sales",
+                "default": 12
+              }
+            }
+          },
+          "appraisalRules": {
+            "type": "object",
+            "properties": {
+              "filters": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AppraisalFilter"
+                }
+              },
+              "adjustments": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AppraisalAdjustment"
+                }
+              }
+            }
+          },
+          "buybox": {
+            "type": "object",
+            "properties": {
+              "rehabLevelIndex": {
+                "type": "integer",
+                "description": "Rehab level 0-4 (0=as-is, 4=full gut)",
+                "default": 2,
+                "minimum": 0,
+                "maximum": 4
+              },
+              "majorItems": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MajorItem"
+                }
+              },
+              "additionPlay": {
+                "type": "number",
+                "description": "Additional square footage value",
+                "default": 0
+              },
+              "closingCostsPercent": {
+                "type": "number",
+                "description": "Closing costs as % of ARV",
+                "default": 10
+              },
+              "carryingCostsPercent": {
+                "type": "number",
+                "description": "Carrying costs as % of ARV",
+                "default": 5
+              },
+              "wholesaleFee": {
+                "type": "number",
+                "description": "Wholesale fee in dollars",
+                "default": 10000
+              },
+              "desiredProfit": {
+                "type": "number",
+                "description": "Desired profit in dollars"
+              }
+            }
+          },
+          "enrichment": {
+            "type": "object",
+            "properties": {
+              "permits": {
+                "type": "boolean",
+                "description": "Include permit history",
+                "default": true
+              },
+              "floodZone": {
+                "type": "boolean",
+                "description": "Include flood zone data",
+                "default": true
+              },
+              "weatherRisk": {
+                "type": "boolean",
+                "description": "Include weather risk data",
+                "default": false
+              }
+            }
+          }
+        }
+      },
+      "AppraisalFilter": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["subdivision_match", "sale_age", "sqft_diff", "property_type", "year_built_diff", "distance"]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "value": {
+            "type": "number"
+          }
+        }
+      },
+      "AppraisalAdjustment": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["old_comp_discount", "bedroom", "bathroom", "pool", "garage", "carport"]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "percentage": {
+            "type": "number"
+          }
+        }
+      },
+      "MajorItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "cost": {
+            "type": "number"
+          }
+        }
+      },
+      "AnalyzeResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "analysisId": {
+                "type": "string",
+                "example": "analysis_1708123456789_abc1234"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "provider": {
+                "type": "string",
+                "example": "corelogic"
+              },
+              "property": {
+                "$ref": "#/components/schemas/Property"
+              },
+              "enrichment": {
+                "$ref": "#/components/schemas/Enrichment"
+              },
+              "comparables": {
+                "$ref": "#/components/schemas/Comparables"
+              },
+              "valuation": {
+                "$ref": "#/components/schemas/Valuation"
+              },
+              "options": {
+                "type": "object",
+                "properties": {
+                  "rehabLevels": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "index": { "type": "integer" },
+                        "name": { "type": "string" },
+                        "perSqft": { "type": "number" },
+                        "estimatedCost": { "type": "number" }
+                      }
+                    }
+                  },
+                  "majorItems": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "name": { "type": "string" },
+                        "defaultCost": { "type": "number" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Property": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "address": {
+            "type": "object",
+            "properties": {
+              "street": { "type": "string" },
+              "city": { "type": "string" },
+              "state": { "type": "string" },
+              "zipCode": { "type": "string" },
+              "county": { "type": "string" }
+            }
+          },
+          "characteristics": {
+            "type": "object",
+            "properties": {
+              "bedrooms": { "type": "integer" },
+              "bathrooms": { "type": "number" },
+              "squareFeet": { "type": "integer" },
+              "yearBuilt": { "type": "integer" },
+              "propertyType": { "type": "string" }
+            }
+          },
+          "tax": {
+            "type": "object",
+            "properties": {
+              "assessedValue": { "type": "number" },
+              "marketValue": { "type": "number" },
+              "taxAmount": { "type": "number" }
+            }
+          },
+          "lastSale": {
+            "type": "object",
+            "properties": {
+              "date": { "type": "string" },
+              "price": { "type": "number" }
+            }
+          }
+        }
+      },
+      "Enrichment": {
+        "type": "object",
+        "properties": {
+          "permits": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "count": { "type": "integer" },
+              "totalJobValue": { "type": "number" },
+              "recentTypes": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          },
+          "floodZone": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "zone": { "type": "string" },
+              "description": { "type": "string" },
+              "isInFloodZone": { "type": "boolean" }
+            }
+          },
+          "weatherRisk": {
+            "type": "object",
+            "nullable": true
+          }
+        }
+      },
+      "Comparables": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "object",
+            "properties": {
+              "total": { "type": "integer" },
+              "enabled": { "type": "integer" },
+              "arv": { "type": "number" },
+              "avgPricePerSqft": { "type": "number" }
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "address": { "type": "string" },
+                "distanceMiles": { "type": "number" },
+                "bedrooms": { "type": "integer" },
+                "bathrooms": { "type": "number" },
+                "squareFeet": { "type": "integer" },
+                "salePrice": { "type": "number" },
+                "saleDate": { "type": "string" },
+                "isEnabled": { "type": "boolean" },
+                "adjustedSalePrice": { "type": "number" }
+              }
+            }
+          }
+        }
+      },
+      "Valuation": {
+        "type": "object",
+        "properties": {
+          "arv": { "type": "number" },
+          "rehab": {
+            "type": "object",
+            "properties": {
+              "level": { "type": "string" },
+              "totalCost": { "type": "number" }
+            }
+          },
+          "buyPrice": {
+            "type": "object",
+            "properties": {
+              "amount": { "type": "number" },
+              "percentOfArv": { "type": "number" }
+            }
+          },
+          "wholesale": {
+            "type": "object",
+            "properties": {
+              "fee": { "type": "number" },
+              "price": { "type": "number" }
+            }
+          },
+          "profit": {
+            "type": "object",
+            "properties": {
+              "projected": { "type": "number" },
+              "roi": { "type": "number" }
+            }
+          },
+          "recommendation": { "type": "string" },
+          "recommendationReason": { "type": "string" }
+        }
+      },
+      "DefaultsResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "searchOptions": {
+                "type": "object",
+                "properties": {
+                  "radiusMiles": { "type": "number", "example": 1 },
+                  "maxComps": { "type": "integer", "example": 15 },
+                  "monthsBack": { "type": "integer", "example": 12 }
+                }
+              },
+              "appraisalRules": {
+                "type": "object",
+                "properties": {
+                  "filters": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/AppraisalFilter" }
+                  },
+                  "adjustments": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/AppraisalAdjustment" }
+                  }
+                }
+              },
+              "buybox": {
+                "type": "object",
+                "properties": {
+                  "rehabLevelIndex": { "type": "integer", "example": 2 },
+                  "closingCostsPercent": { "type": "number", "example": 10 },
+                  "carryingCostsPercent": { "type": "number", "example": 5 },
+                  "wholesaleFee": { "type": "number", "example": 10000 }
+                }
+              },
+              "rehabLevels": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "index": { "type": "integer" },
+                    "name": { "type": "string" }
+                  }
+                }
+              },
+              "majorItems": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "name": { "type": "string" },
+                    "defaultCost": { "type": "number" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,86 @@
+name = "flowstate-api"
+main = "src/index.ts"
+compatibility_date = "2024-09-09"
+compatibility_flags = ["nodejs_compat"]
+
+# Development server configuration
+[dev]
+port = 8787
+
+[vars]
+ENVIRONMENT = "production"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "flowstate-api-db"
+database_id = "106d2645-8ec1-4ae9-8f72-7563ba8aa93f"
+migrations_dir = "../../packages/db/migrations"
+
+[[kv_namespaces]]
+binding = "API_CACHE"
+id = "076d6c5a242c4b5d9765d04b8b8755b6"
+
+# ─── Durable Objects ─────────────────────────────────────────────────────────
+
+[[durable_objects.bindings]]
+name = "ANALYSIS_JOB"
+class_name = "AnalysisJobDO"
+
+[[durable_objects.bindings]]
+name = "RATE_LIMIT_COORDINATOR"
+class_name = "RateLimitCoordinatorDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["AnalysisJobDO", "RateLimitCoordinatorDO"]
+
+# ─── Queues ─────────────────────────────────────────────────────────────────
+
+[[queues.producers]]
+queue = "flowstate-analysis-jobs"
+binding = "ANALYSIS_QUEUE"
+
+[[queues.consumers]]
+queue = "flowstate-analysis-jobs"
+max_batch_size = 1
+max_batch_timeout = 0
+max_retries = 3
+max_concurrency = 10
+
+# Dead letter queue for failed jobs
+[[queues.producers]]
+queue = "flowstate-analysis-jobs-dlq"
+binding = "ANALYSIS_DLQ"
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+
+# Secrets (set via wrangler secret put):
+# CoreLogic API Keys (with rotation support - 100 calls/day each)
+# - CORELOGIC_CLIENT_ID_0
+# - CORELOGIC_CLIENT_SECRET_0
+# - CORELOGIC_CLIENT_ID_1
+# - CORELOGIC_CLIENT_SECRET_1
+# - CORELOGIC_CLIENT_ID_2
+# - CORELOGIC_CLIENT_SECRET_2
+# - CORELOGIC_CLIENT_ID_3
+# - CORELOGIC_CLIENT_SECRET_3
+# - CORELOGIC_CLIENT_ID_4
+# - CORELOGIC_CLIENT_SECRET_4
+# - CORELOGIC_CLIENT_ID_5
+# - CORELOGIC_CLIENT_SECRET_5
+# - CORELOGIC_CLIENT_ID_6
+# - CORELOGIC_CLIENT_SECRET_6
+# - CORELOGIC_CLIENT_ID_7
+# - CORELOGIC_CLIENT_SECRET_7
+#
+# OpenRouter LLM (for vision analysis)
+# - OPENROUTER_API_KEY
+# - OPENROUTER_MODEL (optional, defaults to google/gemini-2.0-flash-001)
+#
+# Dashboard Integration (shared secret for session-based auth)
+# - DASHBOARD_INTERNAL_SECRET
