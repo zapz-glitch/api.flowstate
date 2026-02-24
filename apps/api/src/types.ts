@@ -2,7 +2,27 @@
  * API Types
  */
 
-import type { AnalysisJobMessage, DeadLetterMessage } from './queues/types'
+import type { AnalysisWorkflowParams } from './workflows/types'
+
+// ─── Workflow Binding Type ────────────────────────────────────────────────────
+// Cloudflare Workflows binding interface
+interface WorkflowInstance {
+  id: string
+  pause(): Promise<void>
+  resume(): Promise<void>
+  terminate(): Promise<void>
+  restart(): Promise<void>
+  status(): Promise<{
+    status: 'queued' | 'running' | 'paused' | 'complete' | 'errored' | 'terminated' | 'unknown'
+    error?: string
+    output?: unknown
+  }>
+}
+
+interface WorkflowBinding<TParams = unknown> {
+  create(options: { id?: string; params: TParams }): Promise<WorkflowInstance>
+  get(id: string): Promise<WorkflowInstance>
+}
 
 export interface Env {
   DB: D1Database
@@ -12,10 +32,10 @@ export interface Env {
   // ─── Durable Objects ─────────────────────────────────────────────────────────
   ANALYSIS_JOB: DurableObjectNamespace
   RATE_LIMIT_COORDINATOR: DurableObjectNamespace
+  FIRECRAWL_RATE_LIMITER: DurableObjectNamespace
 
-  // ─── Queues ─────────────────────────────────────────────────────────────────
-  ANALYSIS_QUEUE: Queue<AnalysisJobMessage>
-  ANALYSIS_DLQ?: Queue<DeadLetterMessage>
+  // ─── Workflows ─────────────────────────────────────────────────────────────────
+  ANALYSIS_WORKFLOW: WorkflowBinding<AnalysisWorkflowParams>
 
   // ─── Property Data (CoreLogic) ─────────────────────────────────────────────
   // Support multiple keys for rotation (100 calls/day each)

@@ -1,62 +1,48 @@
 /**
  * Property Analysis Route
  *
- * Single endpoint for complete property analysis including:
- * - Property lookup with enrichment (CoreLogic + permits + flood)
- * - Comparables with appraisal rules (filters & adjustments)
- * - Photo fetching via modular PhotoProvider (Zillow, MLS, etc.)
- * - LLM-based comp selection (identifies best comps for ARV)
- * - ARV calculation from selected comps
- * - Valuation with rehab costs and buy price analysis
+ * Async endpoint for complete property analysis using Cloudflare Workflows.
  *
- * Modular Flow:
+ * Analysis Flow (via AnalysisWorkflow):
  * 1. PropertyApi.getPropertyBundle() - fetches property, comps, enrichment
- * 2. PhotoProvider.fetchPhotoBundle() - fetches photos from any source
- * 3. AppraisalService.evaluate() - applies filters & adjustments to comps
- * 4. CompSelectionService.selectBestComps() - LLM analyzes comps to select best matches
- * 5. ValuationService.calculate() - computes buy price and investment metrics
+ * 2. AppraisalService.evaluate() - applies filters & adjustments to comps
+ * 3. PhotoProvider.fetchPhotoBundle() - fetches photos in parallel (rate-limited)
+ * 4. BatchClassificationService.classifyBatch() - classifies ALL properties in 1-2 LLM calls
+ * 5. ValuationService.calculate() - computes weighted ARV and investment metrics
+ *
+ * Architecture Benefits (vs Queue-based):
+ * - True parallel execution with fan-out
+ * - Automatic retries with backoff per step
+ * - Durable execution (survives restarts)
+ * - Step-level caching
+ * - 10-15 seconds vs 60-120 seconds
+ *
+ * Real-time Updates:
+ * - WebSocket streaming via /ws/analyze/:jobId
+ * - HTTP polling via GET /analyze/jobs/:jobId
  */
 
 import { Hono } from 'hono'
 import type { Env } from '../types'
 import type { AuthContext } from '../middleware/auth'
-import { createPropertyApi, type PropertyBundle } from '../services/property-api'
 import {
-  createAppraisalService,
   DEFAULT_FILTERS,
   DEFAULT_ADJUSTMENTS,
   type AppraisalFilter,
   type AppraisalAdjustment,
-  type AppraisedComparable,
 } from '../services/appraisal'
-import { filtersToApiParams } from '../services/appraisal/types'
 import {
-  createValuationService,
   REHAB_LEVELS,
   MAJOR_ITEMS,
   type MajorItem,
 } from '../services/valuation'
-import { createVisionService } from '../services/vision'
-import {
-  createPhotoService,
-  type PhotoBundle,
-} from '../services/photo-provider'
-import {
-  createCompSelectionService,
-  type SubjectPropertyData,
-  type CompPropertyData,
-  type CompSelectionResult,
-} from '../services/comp-selection'
-import type { AnalysisJobMessage } from '../queues/types'
-import { QueuePriority } from '../queues/types'
 import type { QueueJobResponse, JobStatusResponse } from '../durable-objects/types'
+import type { AnalysisWorkflowParams } from '../workflows/types'
 import { generateWsToken } from '../utils/ws-token'
-import {
-  selectBestCompFromData,
-  buildAnalysisResponse,
-} from '../services/analysis'
 
 type Variables = { auth: AuthContext }
+
+const analyze = new Hono<{ Bindings: Env; Variables: Variables }>()
 
 // ─── Helper Functions ─────────────────────────────────────────────────────────
 
@@ -94,8 +80,6 @@ function normalizePropertyKey(request: AnalyzeRequest): string {
   }
   return `addr:${Math.abs(hash).toString(36)}`
 }
-
-const analyze = new Hono<{ Bindings: Env; Variables: Variables }>()
 
 // ─── Request Types ─────────────────────────────────────────────────────────────
 
@@ -178,316 +162,15 @@ interface AnalyzeRequest {
 /**
  * POST /analyze
  *
- * Complete property analysis endpoint with LLM-based comp selection
+ * Start a property analysis using Cloudflare Workflows.
+ * Returns immediately with job ID and URLs for status/streaming.
+ *
+ * Processing is handled by AnalysisWorkflow with parallel execution.
+ * Results can be retrieved via:
+ * - WebSocket: /ws/analyze/:jobId (real-time updates)
+ * - Polling: GET /analyze/jobs/:jobId
  */
 analyze.post('/', async (c) => {
-  try {
-    const body = await c.req.json<AnalyzeRequest>()
-
-    // Validate input
-    if (!body.address && !body.streetAddress && !body.propertyId) {
-      return c.json(
-        { success: false, error: 'address, streetAddress, or propertyId is required' },
-        400
-      )
-    }
-
-    // Initialize services
-    const propertyApi = createPropertyApi(c.env)
-    const appraisalService = createAppraisalService()
-    const valuationService = createValuationService()
-    const visionService = createVisionService(c.env)
-    const photoService = createPhotoService(c.env)
-    const compSelectionService = createCompSelectionService(c.env)
-
-    const searchOpts = body.searchOptions ?? {}
-    const enrichOpts = body.enrichment ?? { permits: true, floodZone: true }
-    const photoOpts = body.photoAnalysis ?? {}
-    const zillowOpts = body.zillowContext ?? {}
-
-    // Get appraisal rules early so we can extract API-level filter params
-    const rules = body.appraisalRules ?? {}
-    const filters = rules.filters ?? DEFAULT_FILTERS
-    const adjustments = rules.adjustments ?? DEFAULT_ADJUSTMENTS
-
-    // Extract API-level filter params from appraisal rules
-    // This passes sqftVariance, radiusMiles, monthsBack to the API query
-    // so we get pre-filtered comps instead of filtering everything post-fetch
-    const apiFilterParams = filtersToApiParams(filters)
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 1: Get property data via PropertyApi.getPropertyBundle()
-    // ═══════════════════════════════════════════════════════════════════════════
-    const bundleResult = await propertyApi.getPropertyBundle({
-      address: body.address,
-      streetAddress: body.streetAddress,
-      city: body.city,
-      state: body.state,
-      zipCode: body.zipCode,
-      propertyId: body.propertyId,
-      comparables: {
-        // Use explicit searchOptions if provided, otherwise fall back to appraisal filter values
-        radiusMiles: searchOpts.radiusMiles ?? apiFilterParams.radiusMiles ?? 1,
-        maxComps: searchOpts.maxComps ?? 10,
-        monthsBack: searchOpts.monthsBack ?? apiFilterParams.monthsBack ?? 12,
-        // Pass sqftVariance from appraisal filters to pre-filter comps at API level
-        sqftVariance: apiFilterParams.sqftVariance,
-      },
-      enrichment: {
-        permits: enrichOpts.permits ?? true,
-        floodZone: enrichOpts.floodZone ?? true,
-        weatherRisk: enrichOpts.weatherRisk ?? false,
-      },
-      // Skip cache if requested (forces fresh data from APIs)
-      skipCache: body.skipCache,
-    })
-
-    if (!bundleResult.success) {
-      console.error('Property bundle fetch failed:', {
-        error: bundleResult.error,
-        code: bundleResult.code,
-        address: body.address,
-        propertyId: body.propertyId,
-      })
-      return c.json(
-        { success: false, error: bundleResult.error, code: bundleResult.code },
-        bundleResult.code === 'NOT_FOUND' ? 404 : 500
-      )
-    }
-
-    const bundle: PropertyBundle = bundleResult.data
-    const property = bundle.property
-    const comparables = bundle.comparables
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 2: Apply appraisal rules (pure data evaluation)
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Note: rules, filters, and adjustments are already defined above for API params
-
-    const appraisalResult = appraisalService.evaluateWithFallback(property, comparables, {
-      filters,
-      adjustments,
-      minComps: 3,
-      maxNearestComps: 5,
-    })
-
-    // Generate Zillow URLs for all comps (for reference links)
-    const zillowUrls = visionService.getCompZillowUrls(appraisalResult.comparables)
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 3: Fetch Zillow data via Gemini URL Context (if enabled)
-    //
-    // Note: This uses Gemini's URL context tool for web page understanding,
-    // NOT vision analysis. Vision analysis (photo comparison) uses OpenRouter.
-    // ═══════════════════════════════════════════════════════════════════════════
-    let photoBundle: PhotoBundle | null = null
-
-    // Zillow data fetching is controlled by zillowContext.enabled
-    // (photoOpts.enabled is deprecated but still supported for backwards compatibility)
-    const shouldFetchZillow = zillowOpts.enabled ?? photoOpts.enabled
-
-    if (shouldFetchZillow && photoService.isAvailable()) {
-      const maxPhotoComps = zillowOpts.maxComps ?? photoOpts.maxComps ?? 10
-      const enabledComps = appraisalResult.comparables.filter((c) => c.isEnabled)
-      const compsForPhotos = enabledComps.slice(0, maxPhotoComps)
-
-      try {
-        photoBundle = await photoService.fetchPhotoBundle(
-          {
-            propertyId: property.id,
-            address: property.address,
-            city: property.city,
-            state: property.state,
-            zipCode: property.zipCode,
-          },
-          compsForPhotos.map((comp) => ({
-            propertyId: comp.id,
-            address: comp.address,
-            city: comp.city,
-            state: comp.state,
-            zipCode: comp.zipCode,
-          })),
-          {
-            maxComps: maxPhotoComps,
-            // Pass skipCache from zillowContext options
-            skipCache: zillowOpts.skipCache,
-          }
-        )
-
-        console.log(`[Analyze] Zillow data fetched via Gemini URL Context: subject=${!!photoBundle.subject}, comps=${Object.keys(photoBundle.comps).length}`)
-      } catch (photoError) {
-        // Fail gracefully - continue analysis without Zillow data
-        console.error('[Analyze] Zillow data fetching failed, continuing without:', {
-          error: photoError instanceof Error ? photoError.message : 'Unknown error',
-          stack: photoError instanceof Error ? photoError.stack : undefined,
-        })
-        photoBundle = null
-      }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 4: LLM-based comp selection (if photos available) or Data-Based Selection
-    // ═══════════════════════════════════════════════════════════════════════════
-    let compSelectionResult: CompSelectionResult | null = null
-    let finalArv = appraisalResult.arv
-    let arvSource: 'appraisal' | 'comp-selection' = 'appraisal'
-    let bestCompId: string | null = null
-    let selectedCompIds: string[] = []
-    let dataBasedScores: Map<string, number> = new Map()
-
-    if (photoOpts.enabled && photoBundle?.subject) {
-      const maxComps = photoOpts.maxComps ?? 10
-      const enabledComps = appraisalResult.comparables.filter((c) => c.isEnabled)
-      const compsToAnalyze = enabledComps.slice(0, maxComps)
-
-      console.log(`[Analyze] Running LLM comp selection for ${compsToAnalyze.length} comps`)
-
-      try {
-        // Build data for LLM comp selection
-        const subjectData: SubjectPropertyData = {
-          property,
-          photos: photoBundle.subject.photos,
-          description: photoBundle.subject.description,
-        }
-
-        const compsData: CompPropertyData[] = compsToAnalyze.map((comp) => {
-          const compPhotos = photoBundle?.comps[comp.id]
-          return {
-            comparable: comp,
-            photos: compPhotos?.photos ?? [],
-            description: compPhotos?.description,
-          }
-        })
-
-        // Run LLM-based comp selection
-        compSelectionResult = await compSelectionService.selectBestComps(subjectData, compsData, {
-          maxComps: maxComps,
-          useVision: true,
-          requireBetterOrEqual: photoOpts.requireBetterOrEqual ?? true,
-        })
-
-        console.log(`[Analyze] Comp selection complete: ${compSelectionResult.summary.compsPassedFilter} suitable comps found`)
-
-        // Use the LLM-selected ARV if available
-        if (compSelectionResult.recommendedArv) {
-          finalArv = compSelectionResult.recommendedArv
-          arvSource = 'comp-selection'
-        }
-
-        // Track selected comps
-        if (compSelectionResult.bestComp) {
-          bestCompId = compSelectionResult.bestComp.compId
-        }
-        selectedCompIds = compSelectionResult.goodComps.map((c) => c.compId)
-      } catch (compSelectionError) {
-        // Fail gracefully - continue analysis without LLM comp selection
-        console.error('[Analyze] LLM comp selection failed, continuing with data-based selection:', {
-          error: compSelectionError instanceof Error ? compSelectionError.message : 'Unknown error',
-          stack: compSelectionError instanceof Error ? compSelectionError.stack : undefined,
-        })
-        // Use data-based selection as fallback
-        const enabledComps = appraisalResult.comparables.filter((c) => c.isEnabled)
-        const { bestCompId: dataBestCompId, scores } = selectBestCompFromData(
-          enabledComps,
-          property.squareFeet,
-          property.yearBuilt
-        )
-        bestCompId = dataBestCompId
-        dataBasedScores = scores
-      }
-    } else {
-      // No LLM selection - use data-based best comp selection
-      const enabledComps = appraisalResult.comparables.filter((c) => c.isEnabled)
-      const { bestCompId: dataBestCompId, scores } = selectBestCompFromData(
-        enabledComps,
-        property.squareFeet,
-        property.yearBuilt
-      )
-      bestCompId = dataBestCompId
-      dataBasedScores = scores
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 5: Calculate valuation with buybox parameters
-    // ═══════════════════════════════════════════════════════════════════════════
-    const buybox = body.buybox ?? {}
-    const subjectSqft = property.squareFeet || 0
-
-    // Use selected comps for sqft average if available, otherwise all enabled
-    let compsForSqft: AppraisedComparable[] = appraisalResult.comparables.filter((c) => c.isEnabled)
-    if (selectedCompIds.length > 0) {
-      const selectedSet = new Set(selectedCompIds)
-      compsForSqft = appraisalResult.comparables.filter((c) => selectedSet.has(c.id))
-    }
-
-    const compAvgSqft =
-      compsForSqft.length > 0
-        ? compsForSqft.reduce((sum, c) => sum + (c.squareFeet || 0), 0) / compsForSqft.length
-        : subjectSqft
-
-    const valuation = valuationService.calculateValuation({
-      arv: finalArv,
-      subjectSqft,
-      compAvgSqft,
-      rehabLevelIndex: buybox.rehabLevelIndex ?? 2,
-      majorItems: buybox.majorItems,
-      additionPlay: buybox.additionPlay ?? 0,
-      closingCostsPercent: buybox.closingCostsPercent ?? 10,
-      carryingCostsPercent: buybox.carryingCostsPercent ?? 5,
-      wholesaleFee: buybox.wholesaleFee ?? 10000,
-      desiredProfit: buybox.desiredProfit,
-    })
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 6: Build response
-    // ═══════════════════════════════════════════════════════════════════════════
-    return c.json({
-      success: true,
-      data: buildAnalysisResponse(
-        bundle,
-        appraisalResult,
-        photoBundle,
-        compSelectionResult,
-        valuation,
-        {
-          arvSource,
-          finalArv,
-          bestCompId,
-          selectedCompIds,
-          dataBasedScores,
-          zillowUrls,
-          photoProvider: photoService.getProviderName(),
-        }
-      ),
-    })
-  } catch (error) {
-    console.error('Analysis error:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      error,
-    })
-    return c.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Analysis failed',
-        details: error instanceof Error ? error.stack : undefined,
-      },
-      500
-    )
-  }
-})
-
-// ═══════════════════════════════════════════════════════════════════════════
-// ASYNC JOB ENDPOINTS (Queue-based with real-time updates)
-// ═══════════════════════════════════════════════════════════════════════════
-
-/**
- * POST /analyze/async
- *
- * Queue an analysis job for async processing with real-time updates.
- * Returns immediately with job ID and URLs for status/streaming.
- */
-analyze.post('/async', async (c) => {
   try {
     const body = await c.req.json<AnalyzeRequest>()
     const auth = c.get('auth')
@@ -530,19 +213,30 @@ analyze.post('/async', async (c) => {
       )
     }
 
-    // Queue the job for processing
-    const message: AnalysisJobMessage = {
+    // Start the workflow
+    const workflowParams: AnalysisWorkflowParams = {
       jobId,
       userId: auth.userId,
-      apiKeyId: auth.apiKeyId,
-      propertyKey,
-      request: body,
-      priority: body.skipCache ? QueuePriority.NORMAL : QueuePriority.HIGH,
-      queuedAt: new Date().toISOString(),
-      attemptNumber: 1,
+      address: body.address,
+      streetAddress: body.streetAddress,
+      city: body.city,
+      state: body.state,
+      zipCode: body.zipCode,
+      propertyId: body.propertyId,
+      searchOptions: body.searchOptions,
+      enrichment: body.enrichment,
+      photoAnalysis: body.photoAnalysis ?? body.zillowContext,
+      appraisalRules: body.appraisalRules,
+      buybox: body.buybox,
+      skipCache: body.skipCache,
     }
 
-    await c.env.ANALYSIS_QUEUE.send(message)
+    const workflow = await c.env.ANALYSIS_WORKFLOW.create({
+      id: jobId,
+      params: workflowParams,
+    })
+
+    console.log(`[Analyze] Job ${jobId} started via Workflow (instance: ${workflow.id})`)
 
     // Build response URLs
     const baseUrl = new URL(c.req.url).origin
@@ -550,21 +244,21 @@ analyze.post('/async', async (c) => {
       success: true,
       data: {
         jobId,
-        propertyKey, // Include propertyKey so client uses the same key for WebSocket
+        propertyKey,
         status: 'queued',
         streamUrl: `${baseUrl}/v1/analyze/jobs/${jobId}/stream`,
         pollUrl: `${baseUrl}/v1/analyze/jobs/${jobId}`,
-        estimatedDurationMs: body.photoAnalysis?.enabled ? 25000 : 10000,
+        estimatedDurationMs: body.photoAnalysis?.enabled !== false ? 15000 : 8000,
       },
     }
 
     return c.json(response, 202)
   } catch (error) {
-    console.error('[Analyze Async] Error queuing job:', error)
+    console.error('[Analyze] Error starting job:', error)
     return c.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to queue analysis job',
+        error: error instanceof Error ? error.message : 'Failed to start analysis job',
       },
       500
     )
@@ -738,12 +432,12 @@ analyze.get('/defaults', async (c) => {
         weatherRisk: false,
       },
       photoAnalysis: {
-        enabled: false,
+        enabled: true, // Now enabled by default since workflows are fast
         maxComps: 10,
         requireBetterOrEqual: true,
       },
       zillowContext: {
-        enabled: false,
+        enabled: true,
         skipCache: false,
         maxComps: 10,
       },

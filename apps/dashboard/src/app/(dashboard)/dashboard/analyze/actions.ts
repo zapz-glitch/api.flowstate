@@ -3,10 +3,9 @@
 import { getSession } from '@/lib/api'
 import { getCloudflareEnv } from '@/lib/cloudflare'
 
-// Get API URL based on environment
-async function getApiUrl(): Promise<string> {
-  const env = await getCloudflareEnv()
-  return env.API_URL || 'https://api.flowstate.homes'
+// Get API URL - inlined at build time via next.config.js
+function getApiUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL!
 }
 
 // Get dashboard internal secret for API auth
@@ -51,6 +50,14 @@ export interface AnalyzeData {
   }
 }
 
+/** Property classification (As-Is vs After-Renovation) */
+export interface ClassificationSummary {
+  type: 'as_is' | 'after_renovation' | 'transitional'
+  confidence: number
+  reasoning: string
+  method?: string
+}
+
 export interface SubjectData {
   address?: string
   county?: string | null
@@ -68,6 +75,8 @@ export interface SubjectData {
   } | null
   taxAssessment?: number | null
   photos?: string[]
+  /** Property classification (as_is, after_renovation, transitional) */
+  classification?: ClassificationSummary | null
 }
 
 export interface ValuationData {
@@ -115,6 +124,14 @@ export interface CompItem {
   selectionReason?: string | null
   /** Key features identified by LLM analysis */
   keyFeatures?: string[] | null
+  /** Whether this comp is enabled (passed all filters) */
+  isEnabled?: boolean
+  /** Reasons why this comp was disabled (if any) */
+  disableReasons?: string[]
+  /** Property classification (as_is, after_renovation, transitional) */
+  classification?: ClassificationSummary | null
+  /** Weight contribution to ARV calculation (0-1) */
+  weightInArv?: number | null
   /** Appraisal rule evaluation details */
   appraisalRules?: {
     /** Whether this comp passed all filters */
@@ -209,11 +226,11 @@ export interface JobStatusResult {
 }
 
 /**
- * Queue an async property analysis job
+ * Queue a property analysis job
  * Returns job ID and URLs for streaming/polling
  *
  * Security flow:
- * 1. Queue the job via /v1/analyze/async (authenticated with dashboard headers)
+ * 1. Queue the job via /v1/analyze (authenticated with dashboard headers)
  * 2. Request a short-lived signed WS token from /v1/analyze/ws-token
  * 3. Return the token-authenticated WebSocket URL
  */
@@ -238,7 +255,7 @@ export async function queueAnalysis(request: AnalyzeRequest): Promise<QueueAnaly
     const apiUrl = await getApiUrl()
 
     // Step 1: Queue the analysis job
-    const response = await fetch(`${apiUrl}/v1/analyze/async`, {
+    const response = await fetch(`${apiUrl}/v1/analyze`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -393,91 +410,3 @@ export async function getJobStatus(jobId: string, propertyKey: string): Promise<
   }
 }
 
-/**
- * Generate a property key for WebSocket connection
- * This must match the API's normalizePropertyKey function
- */
-function generatePropertyKey(address: string): string {
-  const normalized = address.toLowerCase().trim()
-  let hash = 0
-  for (let i = 0; i < normalized.length; i++) {
-    const char = normalized.charCodeAt(i)
-    hash = (hash << 5) - hash + char
-    hash = hash & hash
-  }
-  return `addr:${Math.abs(hash).toString(36)}`
-}
-
-/**
- * Run property analysis via the Flowstate API (synchronous)
- * Uses session-based authentication - no API key required for logged-in users
- */
-export async function runAnalysis(request: AnalyzeRequest): Promise<AnalyzeResult> {
-  // Get user session for authentication
-  const session = await getSession()
-  if (!session?.user) {
-    return {
-      success: false,
-      error: 'Not authenticated. Please log in to use this feature.',
-    }
-  }
-
-  const dashboardSecret = await getDashboardSecret()
-  if (!dashboardSecret) {
-    return {
-      success: false,
-      error: 'Dashboard configuration error. Please contact support.',
-    }
-  }
-
-  const startTime = Date.now()
-
-  try {
-    const apiUrl = await getApiUrl()
-
-    const response = await fetch(`${apiUrl}/v1/analyze`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Dashboard-User-Id': session.user.id,
-        'X-Dashboard-Secret': dashboardSecret,
-      },
-      body: JSON.stringify({
-        address: request.address,
-        photoAnalysis: request.photoAnalysis ?? { enabled: true, maxComps: 10, requireBetterOrEqual: true },
-        searchOptions: request.searchOptions ?? {
-          radiusMiles: 1,
-          maxComps: 10,
-          monthsBack: 12,
-        },
-        skipCache: request.skipCache,
-      }),
-    })
-
-    const result = (await response.json()) as {
-      success?: boolean
-      error?: string
-      data?: AnalyzeData
-    }
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: result.error || `API request failed with status ${response.status}`,
-      }
-    }
-
-    return {
-      success: true,
-      data: result.data || {},
-      timing: {
-        durationMs: Date.now() - startTime,
-      },
-    }
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Analysis failed',
-    }
-  }
-}

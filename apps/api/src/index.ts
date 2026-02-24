@@ -20,10 +20,10 @@ import appraisalRules from './routes/appraisal-rules'
 import wsStream from './routes/ws-stream'
 
 // Durable Objects
-export { AnalysisJobDO, RateLimitCoordinatorDO } from './durable-objects'
+export { AnalysisJobDO, RateLimitCoordinatorDO, FirecrawlRateLimiterDO } from './durable-objects'
 
-// Queue handlers
-import { analysisQueueConsumer } from './queues'
+// Workflows
+export { AnalysisWorkflow } from './workflows'
 
 type Variables = { auth: AuthContext }
 
@@ -113,8 +113,7 @@ app.onError((err, c) => {
   )
 })
 
-// Export worker with fetch and queue handlers
+// Export worker
 export default {
   fetch: app.fetch,
-  queue: analysisQueueConsumer.queue,
 }

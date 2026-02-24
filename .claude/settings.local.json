@@ -10,7 +10,8 @@
       "Bash(wrangler secret list:*)",
       "Bash(npm run typecheck:*)",
       "Bash(ls:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(wrangler secret put:*)"
     ]
   }
 }

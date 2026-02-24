@@ -30,27 +30,24 @@ class_name = "AnalysisJobDO"
 name = "RATE_LIMIT_COORDINATOR"
 class_name = "RateLimitCoordinatorDO"
 
+[[durable_objects.bindings]]
+name = "FIRECRAWL_RATE_LIMITER"
+class_name = "FirecrawlRateLimiterDO"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["AnalysisJobDO", "RateLimitCoordinatorDO"]
 
-# ─── Queues ─────────────────────────────────────────────────────────────────
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["FirecrawlRateLimiterDO"]
 
-[[queues.producers]]
-queue = "flowstate-analysis-jobs"
-binding = "ANALYSIS_QUEUE"
+# ─── Workflows ─────────────────────────────────────────────────────────────────
 
-[[queues.consumers]]
-queue = "flowstate-analysis-jobs"
-max_batch_size = 1
-max_batch_timeout = 0
-max_retries = 3
-max_concurrency = 10
-
-# Dead letter queue for failed jobs
-[[queues.producers]]
-queue = "flowstate-analysis-jobs-dlq"
-binding = "ANALYSIS_DLQ"
+[[workflows]]
+name = "analysis-workflow"
+binding = "ANALYSIS_WORKFLOW"
+class_name = "AnalysisWorkflow"
 
 [observability]
 enabled = true

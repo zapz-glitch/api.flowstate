@@ -10,6 +10,11 @@ const nextConfig = {
       bodySizeLimit: '2mb',
     },
   },
+  // Inline env vars at build time
+  // NODE_ENV=production in deploy script will use .env.production values
+  env: {
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+  },
 }
 
 export default nextConfig

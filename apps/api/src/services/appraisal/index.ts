@@ -30,6 +30,7 @@ import type {
   ComparableEvaluation,
 } from './types'
 import { DEFAULT_FILTERS, DEFAULT_ADJUSTMENTS } from './types'
+import type { ClassificationResult, PropertyClassification } from '../classification'
 
 // Re-export types
 export type {
@@ -44,6 +45,7 @@ export type {
 } from './types'
 export { DEFAULT_FILTERS, DEFAULT_ADJUSTMENTS } from './types'
 export { evaluateComparable, evaluateComparables } from './evaluator'
+// Note: WeightFactors, CompWeightBreakdown, WeightedARVResult are defined below and exported from this file
 
 // Note: FallbackOptions and AppraisalResultWithFallback are exported via interface definitions below
 
@@ -54,6 +56,86 @@ export interface FallbackOptions {
   minComps?: number
   /** Maximum comps to use when falling back to nearest */
   maxNearestComps?: number
+}
+
+// ─── Weighted ARV Types ───────────────────────────────────────────────────────
+
+/**
+ * Weight factors for individual comp scoring
+ *
+ * Expert Underwriter Methodology:
+ * - Comps matching subject condition (As-Is or After-Renovation) are PRIMARY
+ * - Transitional comps provide supporting data
+ * - Opposite-condition comps are used for spread analysis only
+ */
+export interface WeightFactors {
+  /** Distance factor (0.3-2.0) - closer = better */
+  distance: number
+  /** Sqft similarity factor (0.5-1.5) */
+  sqftSimilarity: number
+  /** Recency factor (0.6-1.4) - more recent = better */
+  recency: number
+  /** Classification match factor (0.0-2.0) - KEY FACTOR */
+  classificationMatch: number
+  /** Classification confidence (0.8-1.2) */
+  confidenceBonus: number
+  /** Appraisal filter pass rate bonus (0.5-1.5) */
+  filterPassRate: number
+}
+
+export interface CompWeightBreakdown {
+  compId: string
+  price: number
+  weight: number
+  normalizedWeight: number
+  factors: WeightFactors
+  classification?: PropertyClassification
+  /** Whether this comp is a primary match (same classification as subject) */
+  isPrimaryMatch: boolean
+  /** Tier: 1=same classification, 2=transitional, 3=opposite */
+  tier: 1 | 2 | 3
+}
+
+/**
+ * Investment scenario breakdown
+ * Provides different values for different investment strategies
+ */
+export interface InvestmentScenario {
+  /** Strategy type */
+  strategy: 'flip' | 'rental' | 'wholesale'
+  /** Target ARV for this strategy */
+  targetArv: number
+  /** Recommended comps for this strategy */
+  recommendedCompIds: string[]
+  /** Confidence level (0-100) */
+  confidence: number
+  /** Notes for underwriter */
+  notes: string
+}
+
+export interface WeightedARVResult {
+  /** Final ARV (weighted by classification match and data quality) */
+  arv: number
+  /** As-Is value (weighted average of as_is comps) */
+  asIsValue: number | null
+  /** After-Renovation value (weighted average of after_renovation comps) */
+  afterRenovationValue: number | null
+  /** Spread between As-Is and After-Renovation */
+  spread: number | null
+  /** Weight breakdown for each comp */
+  weightBreakdown: CompWeightBreakdown[]
+  /** IDs of comps classified as as_is */
+  asIsCompIds: string[]
+  /** IDs of comps classified as after_renovation */
+  afterRenovationCompIds: string[]
+  /** IDs of transitional comps */
+  transitionalCompIds: string[]
+  /** ID of the best matching comp (highest weight in subject's tier) */
+  bestCompId: string | null
+  /** Investment scenarios for different strategies */
+  scenarios: InvestmentScenario[]
+  /** Underwriter notes */
+  methodology: string
 }
 
 // ─── Service Interface ─────────────────────────────────────────────────────────
@@ -89,6 +171,22 @@ export interface AppraisalService {
    * Calculate ARV from appraised comparables
    */
   calculateARV(comparables: AppraisedComparable[]): number
+
+  /**
+   * Calculate weighted ARV based on property classifications
+   *
+   * Uses multiple factors to weight each comp:
+   * - Distance to subject
+   * - Sqft similarity
+   * - Sale recency
+   * - Classification match (as_is vs after_renovation)
+   */
+  calculateWeightedARV(
+    subject: NormalizedProperty,
+    comparables: AppraisedComparable[],
+    subjectClassification: ClassificationResult,
+    compClassifications: Map<string, ClassificationResult>
+  ): WeightedARVResult
 
   /**
    * Get default filters
@@ -310,6 +408,449 @@ class PropertyAppraisalService implements AppraisalService {
 
   getDefaultAdjustments(): AppraisalAdjustment[] {
     return [...DEFAULT_ADJUSTMENTS]
+  }
+
+  /**
+   * Calculate Weighted ARV using Expert Underwriter Methodology
+   *
+   * ALGORITHM OVERVIEW:
+   * 1. Categorize comps into tiers based on classification match
+   * 2. Apply weighted scoring within each tier
+   * 3. Calculate tier-specific values (As-Is, After-Renovation)
+   * 4. Determine final ARV based on subject classification
+   * 5. Generate investment scenarios
+   *
+   * TIER SYSTEM:
+   * - Tier 1 (Primary): Comps matching subject classification (weight: 60-80%)
+   * - Tier 2 (Support): Transitional comps (weight: 15-30%)
+   * - Tier 3 (Reference): Opposite classification (weight: 5-15%, for spread analysis)
+   *
+   * WEIGHTING PHILOSOPHY:
+   * - For As-Is subjects: As-Is comps = current market value
+   * - For After-Renovation subjects: ARV comps = target sale price
+   * - Spread analysis helps calculate renovation ROI
+   */
+  calculateWeightedARV(
+    subject: NormalizedProperty,
+    comparables: AppraisedComparable[],
+    subjectClassification: ClassificationResult,
+    compClassifications: Map<string, ClassificationResult>
+  ): WeightedARVResult {
+    const enabledComps = comparables.filter((c) => c.isEnabled)
+    const subjectClass = subjectClassification.classification
+
+    // Categorize comps by classification
+    const asIsCompIds: string[] = []
+    const afterRenovationCompIds: string[] = []
+    const transitionalCompIds: string[] = []
+
+    for (const comp of enabledComps) {
+      const classification = compClassifications.get(comp.id)?.classification
+      if (classification === 'as_is') {
+        asIsCompIds.push(comp.id)
+      } else if (classification === 'after_renovation') {
+        afterRenovationCompIds.push(comp.id)
+      } else {
+        transitionalCompIds.push(comp.id)
+      }
+    }
+
+    // Calculate weight factors and breakdown for each comp
+    const weightBreakdown: CompWeightBreakdown[] = []
+
+    for (const comp of enabledComps) {
+      const price = comp.adjustedSalePrice ?? comp.salePrice
+      if (price == null || price <= 0) continue
+
+      const compClassification = compClassifications.get(comp.id)
+      const compClass = compClassification?.classification ?? 'transitional'
+
+      // Determine tier based on classification match
+      const tier = this.determineCompTier(subjectClass, compClass)
+      const isPrimaryMatch = tier === 1
+
+      // Calculate individual factors
+      const factors = this.calculateWeightFactors(
+        subject,
+        comp,
+        subjectClassification,
+        compClassification
+      )
+
+      // Calculate total weight (multiplicative)
+      const weight =
+        factors.distance *
+        factors.sqftSimilarity *
+        factors.recency *
+        factors.classificationMatch *
+        factors.confidenceBonus *
+        factors.filterPassRate
+
+      weightBreakdown.push({
+        compId: comp.id,
+        price,
+        weight,
+        normalizedWeight: 0, // Normalized after
+        factors,
+        classification: compClass,
+        isPrimaryMatch,
+        tier,
+      })
+    }
+
+    // Normalize weights to sum to 1
+    const totalWeight = weightBreakdown.reduce((sum, item) => sum + item.weight, 0)
+    if (totalWeight > 0) {
+      for (const item of weightBreakdown) {
+        item.normalizedWeight = item.weight / totalWeight
+      }
+    }
+
+    // Calculate weighted values for each classification group
+    const asIsValue = this.calculateGroupWeightedValue(weightBreakdown, 'as_is')
+    const afterRenovationValue = this.calculateGroupWeightedValue(weightBreakdown, 'after_renovation')
+    const transitionalValue = this.calculateGroupWeightedValue(weightBreakdown, 'transitional')
+
+    // Calculate spread
+    const spread = asIsValue !== null && afterRenovationValue !== null
+      ? afterRenovationValue - asIsValue
+      : null
+
+    // Determine final ARV based on subject classification and available data
+    const { arv, methodology } = this.calculateFinalARV(
+      subjectClass,
+      weightBreakdown,
+      asIsValue,
+      afterRenovationValue,
+      transitionalValue,
+      this.calculateARV(enabledComps)
+    )
+
+    // Find best comp (highest weight in primary tier)
+    const primaryComps = weightBreakdown.filter((c) => c.tier === 1)
+    const bestComp = primaryComps.length > 0
+      ? primaryComps.reduce((best, item) =>
+          item.normalizedWeight > best.normalizedWeight ? item : best
+        )
+      : weightBreakdown.reduce<CompWeightBreakdown | null>(
+          (best, item) => (!best || item.normalizedWeight > best.normalizedWeight ? item : best),
+          null
+        )
+
+    // Generate investment scenarios
+    const scenarios = this.generateInvestmentScenarios(
+      subjectClass,
+      asIsValue,
+      afterRenovationValue,
+      spread,
+      asIsCompIds,
+      afterRenovationCompIds
+    )
+
+    return {
+      arv,
+      asIsValue,
+      afterRenovationValue,
+      spread,
+      weightBreakdown,
+      asIsCompIds,
+      afterRenovationCompIds,
+      transitionalCompIds,
+      bestCompId: bestComp?.compId ?? null,
+      scenarios,
+      methodology,
+    }
+  }
+
+  /**
+   * Determine comp tier based on classification match
+   *
+   * Tier 1: Same classification as subject (PRIMARY)
+   * Tier 2: Transitional (either subject or comp)
+   * Tier 3: Opposite classification (REFERENCE ONLY)
+   */
+  private determineCompTier(
+    subjectClass: PropertyClassification,
+    compClass: PropertyClassification
+  ): 1 | 2 | 3 {
+    if (subjectClass === compClass) {
+      return 1 // Same classification = primary match
+    }
+
+    if (subjectClass === 'transitional' || compClass === 'transitional') {
+      return 2 // Transitional involved = supporting data
+    }
+
+    // Opposite classifications (as_is vs after_renovation)
+    return 3
+  }
+
+  /**
+   * Calculate weight factors for a single comp
+   *
+   * Expert Underwriter Weighting:
+   * - Classification match is the MOST IMPORTANT factor (0.0-2.0)
+   * - Filter pass rate rewards comps meeting appraisal criteria
+   * - Distance, sqft, recency are secondary but important
+   */
+  private calculateWeightFactors(
+    subject: NormalizedProperty,
+    comp: AppraisedComparable,
+    subjectClassification: ClassificationResult,
+    compClassification: ClassificationResult | undefined
+  ): WeightFactors {
+    const subjectClass = subjectClassification.classification
+    const compClass = compClassification?.classification ?? 'transitional'
+
+    // 1. CLASSIFICATION MATCH (0.0 to 2.0) - CRITICAL FACTOR
+    // This is the most important factor for accurate valuation
+    let classificationMatch: number
+    if (compClass === subjectClass) {
+      // Same classification = full weight
+      classificationMatch = 2.0
+    } else if (subjectClass === 'transitional') {
+      // Subject is transitional - both As-Is and ARV comps are relevant
+      classificationMatch = compClass === 'after_renovation' ? 1.3 : 1.2
+    } else if (compClass === 'transitional') {
+      // Comp is transitional - moderate relevance
+      classificationMatch = 1.0
+    } else {
+      // Opposite classifications (as_is vs after_renovation)
+      // Still useful for spread analysis, but low weight for ARV
+      classificationMatch = 0.3
+    }
+
+    // 2. Distance factor (0.3 to 2.0) - closer is better
+    let distanceFactor = 1.0
+    if (comp.distanceMiles != null) {
+      if (comp.distanceMiles <= 0.25) {
+        distanceFactor = 2.0 // Same block
+      } else if (comp.distanceMiles <= 0.5) {
+        distanceFactor = 1.5 // Very close
+      } else if (comp.distanceMiles <= 1.0) {
+        distanceFactor = 1.0 // Within 1 mile
+      } else if (comp.distanceMiles <= 2.0) {
+        distanceFactor = 0.6 // 1-2 miles
+      } else {
+        distanceFactor = 0.3 // Far
+      }
+    }
+
+    // 3. Sqft similarity factor (0.5 to 1.5)
+    let sqftSimilarity = 1.0
+    if (comp.squareFeet && subject.squareFeet) {
+      const pctDiff = Math.abs(comp.squareFeet - subject.squareFeet) / subject.squareFeet
+      if (pctDiff <= 0.05) {
+        sqftSimilarity = 1.5 // Within 5%
+      } else if (pctDiff <= 0.10) {
+        sqftSimilarity = 1.3 // Within 10%
+      } else if (pctDiff <= 0.15) {
+        sqftSimilarity = 1.1 // Within 15%
+      } else if (pctDiff <= 0.25) {
+        sqftSimilarity = 0.8 // Within 25%
+      } else {
+        sqftSimilarity = 0.5 // >25% different
+      }
+    }
+
+    // 4. Recency factor (0.6 to 1.4) - more recent is better
+    let recencyFactor = 1.0
+    if (comp.saleDate) {
+      const saleDate = new Date(comp.saleDate)
+      if (!isNaN(saleDate.getTime())) {
+        const daysSinceSale = Math.floor(
+          (Date.now() - saleDate.getTime()) / (1000 * 60 * 60 * 24)
+        )
+        if (daysSinceSale <= 30) {
+          recencyFactor = 1.4 // Very recent
+        } else if (daysSinceSale <= 60) {
+          recencyFactor = 1.2 // Recent
+        } else if (daysSinceSale <= 120) {
+          recencyFactor = 1.0 // Normal
+        } else if (daysSinceSale <= 180) {
+          recencyFactor = 0.9 // Getting old
+        } else if (daysSinceSale <= 365) {
+          recencyFactor = 0.7 // Old
+        } else {
+          recencyFactor = 0.6 // Very old
+        }
+      }
+    }
+
+    // 5. Confidence bonus (0.8 to 1.2)
+    let confidenceBonus = 1.0
+    if (compClassification) {
+      confidenceBonus = 0.8 + (compClassification.confidence / 100) * 0.4
+    }
+
+    // 6. Filter pass rate bonus (0.5 to 1.5)
+    // Comps that pass more appraisal filters are more reliable
+    let filterPassRate = 1.0
+    if (comp.evaluation?.filterResults) {
+      const total = comp.evaluation.filterResults.length
+      const passed = comp.evaluation.filterResults.filter((f) => f.passed).length
+      if (total > 0) {
+        const passRate = passed / total
+        // 0.5 at 0%, 1.0 at 60%, 1.5 at 100%
+        filterPassRate = 0.5 + passRate
+      }
+    }
+
+    return {
+      distance: Math.round(distanceFactor * 100) / 100,
+      sqftSimilarity: Math.round(sqftSimilarity * 100) / 100,
+      recency: Math.round(recencyFactor * 100) / 100,
+      classificationMatch: Math.round(classificationMatch * 100) / 100,
+      confidenceBonus: Math.round(confidenceBonus * 100) / 100,
+      filterPassRate: Math.round(filterPassRate * 100) / 100,
+    }
+  }
+
+  /**
+   * Calculate weighted average value for a classification group
+   */
+  private calculateGroupWeightedValue(
+    breakdown: CompWeightBreakdown[],
+    classification: PropertyClassification
+  ): number | null {
+    const groupComps = breakdown.filter((c) => c.classification === classification)
+    if (groupComps.length === 0) return null
+
+    // Calculate weights within this group
+    const groupTotal = groupComps.reduce((sum, c) => sum + c.weight, 0)
+    if (groupTotal === 0) return null
+
+    // Weighted average
+    const weightedSum = groupComps.reduce((sum, c) => {
+      const groupWeight = c.weight / groupTotal
+      return sum + c.price * groupWeight
+    }, 0)
+
+    return Math.round(weightedSum)
+  }
+
+  /**
+   * Calculate final ARV based on subject classification and available data
+   *
+   * Expert Underwriter Logic:
+   * - As-Is subject → Primary value is current market (As-Is comps)
+   * - After-Renovation subject → Primary value is target ARV (After-Reno comps)
+   * - Transitional → Blend of both with heavier weight on After-Renovation
+   */
+  private calculateFinalARV(
+    subjectClass: PropertyClassification,
+    breakdown: CompWeightBreakdown[],
+    asIsValue: number | null,
+    afterRenovationValue: number | null,
+    transitionalValue: number | null,
+    fallbackArv: number
+  ): { arv: number; methodology: string } {
+    // Count comps in each tier
+    const tier1Comps = breakdown.filter((c) => c.tier === 1)
+    const tier2Comps = breakdown.filter((c) => c.tier === 2)
+
+    // Calculate tier-weighted ARV
+    let arv: number
+    let methodology: string
+
+    if (tier1Comps.length >= 2) {
+      // We have enough primary comps - use weighted average of Tier 1
+      const tier1Total = tier1Comps.reduce((sum, c) => sum + c.weight, 0)
+      arv = Math.round(
+        tier1Comps.reduce((sum, c) => sum + c.price * (c.weight / tier1Total), 0)
+      )
+      methodology = `Weighted average of ${tier1Comps.length} ${subjectClass === 'as_is' ? 'As-Is' : subjectClass === 'after_renovation' ? 'After-Renovation' : 'matching'} comps (Tier 1 primary)`
+    } else if (tier1Comps.length === 1 && tier2Comps.length >= 1) {
+      // One primary comp + transitional support
+      const tier1Weight = 0.6
+      const tier2Weight = 0.4
+      const tier1Price = tier1Comps[0].price
+      const tier2Total = tier2Comps.reduce((sum, c) => sum + c.weight, 0)
+      const tier2Avg = tier2Comps.reduce((sum, c) => sum + c.price * (c.weight / tier2Total), 0)
+      arv = Math.round(tier1Price * tier1Weight + tier2Avg * tier2Weight)
+      methodology = `Blended: 1 primary comp (60%) + ${tier2Comps.length} transitional comps (40%)`
+    } else if (tier2Comps.length >= 2) {
+      // No primary comps - use transitional
+      const tier2Total = tier2Comps.reduce((sum, c) => sum + c.weight, 0)
+      arv = Math.round(
+        tier2Comps.reduce((sum, c) => sum + c.price * (c.weight / tier2Total), 0)
+      )
+      methodology = `Weighted average of ${tier2Comps.length} transitional comps (no ${subjectClass} comps found)`
+    } else {
+      // Fallback to all comps weighted
+      const totalWeight = breakdown.reduce((sum, c) => sum + c.weight, 0)
+      if (totalWeight > 0) {
+        arv = Math.round(
+          breakdown.reduce((sum, c) => sum + c.price * (c.weight / totalWeight), 0)
+        )
+        methodology = `Weighted average of all ${breakdown.length} comps (insufficient matching comps)`
+      } else {
+        arv = fallbackArv
+        methodology = 'Simple average (fallback - no weighted data available)'
+      }
+    }
+
+    return { arv, methodology }
+  }
+
+  /**
+   * Generate investment scenarios based on classification analysis
+   */
+  private generateInvestmentScenarios(
+    subjectClass: PropertyClassification,
+    asIsValue: number | null,
+    afterRenovationValue: number | null,
+    spread: number | null,
+    asIsCompIds: string[],
+    afterRenovationCompIds: string[]
+  ): InvestmentScenario[] {
+    const scenarios: InvestmentScenario[] = []
+
+    // Flip scenario (if we have both values)
+    if (asIsValue !== null && afterRenovationValue !== null && spread !== null) {
+      scenarios.push({
+        strategy: 'flip',
+        targetArv: afterRenovationValue,
+        recommendedCompIds: afterRenovationCompIds,
+        confidence: Math.min(95, 50 + afterRenovationCompIds.length * 15),
+        notes: `Potential spread: $${spread.toLocaleString()}. Based on ${afterRenovationCompIds.length} renovated comps. ` +
+          (subjectClass === 'as_is'
+            ? 'Subject is As-Is - good flip candidate.'
+            : subjectClass === 'after_renovation'
+              ? 'Subject already renovated - limited upside.'
+              : 'Subject is transitional - moderate renovation needed.')
+      })
+    }
+
+    // Wholesale scenario (As-Is focused)
+    if (asIsValue !== null) {
+      scenarios.push({
+        strategy: 'wholesale',
+        targetArv: asIsValue,
+        recommendedCompIds: asIsCompIds,
+        confidence: Math.min(90, 50 + asIsCompIds.length * 15),
+        notes: `Current market value: $${asIsValue.toLocaleString()}. Based on ${asIsCompIds.length} As-Is comps. ` +
+          'Use for wholesale assignment fee calculation.'
+      })
+    }
+
+    // Rental scenario (conservative ARV)
+    const rentalArv = asIsValue !== null && afterRenovationValue !== null
+      ? Math.round(asIsValue + (afterRenovationValue - asIsValue) * 0.4) // 40% of spread
+      : asIsValue ?? afterRenovationValue
+
+    if (rentalArv !== null) {
+      scenarios.push({
+        strategy: 'rental',
+        targetArv: rentalArv,
+        recommendedCompIds: [...asIsCompIds, ...afterRenovationCompIds.slice(0, 2)],
+        confidence: 70,
+        notes: `Conservative rental ARV: $${rentalArv.toLocaleString()}. ` +
+          'Assumes cosmetic updates only, not full renovation.'
+      })
+    }
+
+    return scenarios
   }
 }
 

@@ -52,12 +52,19 @@ export interface AnalyzeRequest {
     weatherRisk?: boolean
   }
 
-  // Photo analysis options
+  // Photo analysis options (deprecated - use zillowContext instead)
   photoAnalysis?: {
     enabled?: boolean
     provider?: 'zillow' | 'mls' | 'redfin'
     maxComps?: number
     requireBetterOrEqual?: boolean
+  }
+
+  // Zillow context options (photos, descriptions for classification)
+  zillowContext?: {
+    enabled?: boolean
+    maxComps?: number
+    skipCache?: boolean
   }
 
   skipCache?: boolean

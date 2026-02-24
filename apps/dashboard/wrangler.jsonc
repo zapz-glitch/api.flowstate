@@ -12,7 +12,6 @@
   },
   // Environment Variables
   "vars": {
-    "API_URL": "https://api.flowstate.homes",
     "NEXT_PUBLIC_API_URL": "https://api.flowstate.homes"
   },
   // Observability

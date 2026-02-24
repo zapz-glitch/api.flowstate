@@ -145,116 +145,6 @@ UNDERWRITING COMPARISON FACTORS:
 Be objective and justify your adjustment. Underwriters must defend their valuations.
 Return ONLY valid JSON, no other text.`
 
-// ─── Zillow Data Extraction Prompt ───────────────────────────────────────────
-
-const ZILLOW_DATA_EXTRACTION = `You are a real estate underwriter extracting property data from a listing for deal analysis.
-
-Extract all available underwriting-relevant data and return as JSON:
-
-{
-  "description": "<full property description - important for understanding condition/features>",
-  "price": <number or null>,
-  "status": "for_sale" | "pending" | "sold" | "off_market",
-  "daysOnMarket": <number or null - important: high DOM may indicate pricing/condition issues>,
-  "yearBuilt": <number or null>,
-  "squareFeet": <number or null>,
-  "lotSize": "<lot size string>",
-  "bedrooms": <number or null>,
-  "bathrooms": <number or null>,
-  "features": ["<feature 1>", "<feature 2>", ...],
-  "priceHistory": [
-    {"date": "<YYYY-MM-DD>", "price": <number>, "event": "listed" | "price_change" | "sold"}
-  ],
-  "neighborhood": {
-    "name": "<neighborhood name>",
-    "walkScore": <number or null>,
-    "transitScore": <number or null>
-  },
-  "taxes": {
-    "amount": <number or null - important for carrying cost calculations>,
-    "year": <number or null>
-  },
-  "hoa": {
-    "amount": <number or null - impacts cash flow analysis>,
-    "frequency": "monthly" | "yearly" | null
-  },
-  "schoolDistrict": "<school district name or null>"
-}
-
-UNDERWRITING NOTES:
-- Days on Market: High DOM (60+) may indicate overpricing or property issues
-- Price History: Multiple price drops suggest motivated seller or issues
-- HOA: Factor into holding costs and rental cash flow analysis
-- Taxes: Use for carrying cost calculations during rehab period
-- Year Built: Pre-1978 = lead paint disclosure, older = more system issues likely
-
-Extract as much information as available. Use null for missing fields.
-Return ONLY valid JSON, no other text.`
-
-// ─── Comp Quality Assessment Prompt ──────────────────────────────────────────
-
-const COMP_QUALITY_ASSESSMENT = `You are a real estate underwriter evaluating a comparable sale for use in ARV analysis. Determine how suitable this comp is for underwriting the subject property's after-repair value.
-
-Analyze this comparable and return a quality assessment:
-
-{
-  "suitabilityScore": <number 0-100>,
-  "similarityFactors": {
-    "location": <number 0-100>,
-    "size": <number 0-100>,
-    "condition": <number 0-100>,
-    "features": <number 0-100>,
-    "age": <number 0-100>
-  },
-  "adjustments": {
-    "locationAdjustment": <number -50000 to 50000>,
-    "conditionAdjustment": <number -50000 to 50000>,
-    "sizeAdjustment": <number -50000 to 50000>,
-    "featureAdjustment": <number -50000 to 50000>
-  },
-  "recommendedWeight": <number 0 to 1>,
-  "notes": ["<underwriting observation>", ...]
-}
-
-COMP SUITABILITY CRITERIA (Underwriting Standards):
-
-EXCELLENT COMP (Score 85-100, Weight 0.8-1.0):
-- Same subdivision or immediate neighborhood (within 0.25 miles)
-- Sold within 90 days
-- Square footage within 10% of subject
-- Same bedroom/bathroom count
-- Similar lot size and property type
-- Comparable condition/finish level to subject's target ARV condition
-
-GOOD COMP (Score 70-84, Weight 0.5-0.8):
-- Same neighborhood or comparable area (within 0.5 miles)
-- Sold within 180 days
-- Square footage within 15% of subject
-- Within 1 bedroom of subject
-- Similar property style and era
-
-ACCEPTABLE COMP (Score 50-69, Weight 0.2-0.5):
-- Comparable neighborhood (within 1 mile)
-- Sold within 12 months
-- Square footage within 20% of subject
-- Adjustments needed but justifiable
-
-WEAK COMP (Score below 50, Weight 0-0.2):
-- Different neighborhood or market area
-- Sold over 12 months ago
-- Significant size difference requiring large adjustments
-- Different property type or style
-- Use only if no better comps available
-
-ADJUSTMENT GUIDELINES:
-- Location: $5-50K depending on neighborhood desirability difference
-- Size: $100-150/sqft for size differences
-- Condition: $10-50K based on finish level differential
-- Features: $5-25K per major feature (pool, garage, etc.)
-
-Underwriters prefer recent, nearby, similar comps. Penalize comps requiring large adjustments.
-Return ONLY valid JSON, no other text.`
-
 // ─── Comp Selection System Prompt ────────────────────────────────────────────
 
 const COMP_SELECTION_SYSTEM = `You are a real estate underwriter specializing in investment property analysis. Your role is to select comparable sales that accurately support the After Repair Value (ARV) for underwriting purposes.
@@ -306,6 +196,68 @@ UNDERWRITING BEST PRACTICES:
 
 You must respond with valid JSON only.`
 
+// ─── Property Classification Prompt ─────────────────────────────────────────
+
+const PROPERTY_CLASSIFICATION = `You are a real estate investment analyst classifying properties as either AS-IS (needs renovation) or AFTER-RENOVATION (renovated/turnkey).
+
+Analyze the provided photos and property description to classify this property.
+
+RETURN THIS EXACT JSON:
+{
+  "classification": "as_is" | "after_renovation" | "transitional",
+  "confidence": <0-100>,
+  "photoAnalysis": {
+    "conditionScore": <0-100>,
+    "indicators": ["<what you see>", ...],
+    "renovationLevel": "none" | "cosmetic" | "partial" | "full"
+  },
+  "descriptionAnalysis": {
+    "keywords_found": ["<keywords>", ...],
+    "investment_indicators": true | false,
+    "retail_ready_indicators": true | false
+  },
+  "reasoning": "<2-3 sentence explanation>"
+}
+
+CLASSIFICATION CRITERIA:
+
+AS-IS (Investment Property - Needs Work):
+- Dated kitchens (old cabinets, laminate counters, old appliances)
+- Original bathrooms (old tile, fixtures from 80s-90s)
+- Worn flooring (stained carpet, damaged hardwood, old linoleum)
+- Deferred maintenance visible (peeling paint, overgrown yard)
+- Keywords: "investor", "handyman", "fixer", "as-is", "potential", "estate sale"
+
+AFTER-RENOVATION (Retail Ready):
+- Modern kitchen (shaker cabinets, granite/quartz, stainless appliances)
+- Updated bathrooms (new tile, modern fixtures, glass shower)
+- New flooring (LVP, new hardwood, new tile)
+- Fresh paint, modern lighting, updated fixtures
+- Keywords: "renovated", "updated", "turnkey", "move-in ready", "remodeled"
+
+TRANSITIONAL (Gray Area):
+- Mix of old and new
+- Partial updates (one room done, others original)
+- Recently cleaned/staged but not renovated
+- Could go either way based on buyer
+
+SCORING GUIDANCE:
+
+conditionScore (0-100):
+- 0-25: Major distress, needs full gut renovation
+- 25-40: Significant work needed, dated throughout
+- 40-60: Transitional, some updates but dated areas remain
+- 60-80: Mostly updated, minor cosmetic work at most
+- 80-100: Fully renovated, turnkey condition
+
+confidence (0-100):
+- 90-100: Clear indicators, high certainty
+- 70-89: Good indicators, reasonable certainty
+- 50-69: Mixed signals, moderate certainty
+- Below 50: Insufficient data or conflicting indicators
+
+Return ONLY valid JSON.`
+
 // ─── Gemini Zillow Extraction Prompt ─────────────────────────────────────────
 
 const GEMINI_ZILLOW_EXTRACTION = `You are extracting property listing data from a Zillow page for real estate underwriting analysis. Return ONLY valid JSON (no markdown, no explanations).
@@ -341,13 +293,14 @@ export const PROMPTS = {
   // Vision analysis
   CONDITION_ANALYSIS,
   COMPARISON_ANALYSIS,
-  ZILLOW_DATA_EXTRACTION,
-  COMP_QUALITY_ASSESSMENT,
+
+  // Property classification (As-Is vs After-Renovation)
+  PROPERTY_CLASSIFICATION,
 
   // Comp selection
   COMP_SELECTION_SYSTEM,
 
-  // Zillow extraction
+  // Zillow extraction (via Gemini)
   GEMINI_ZILLOW_EXTRACTION,
 } as const
 

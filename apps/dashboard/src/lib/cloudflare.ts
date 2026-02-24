@@ -13,7 +13,6 @@ export interface CloudflareEnv {
   DB?: D1Database
   DASHBOARD_INTERNAL_SECRET?: string
   BETTER_AUTH_SECRET?: string
-  API_URL?: string
   [key: string]: unknown
 }
 
@@ -36,7 +35,6 @@ export async function getCloudflareEnv(): Promise<CloudflareEnv> {
   // Fallback to process.env for `npm run dev` with hot reload
   // Reads from .env.local
   return {
-    API_URL: process.env.API_URL,
     DASHBOARD_INTERNAL_SECRET: process.env.DASHBOARD_INTERNAL_SECRET,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
   }

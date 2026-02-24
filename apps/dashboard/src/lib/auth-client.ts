@@ -10,8 +10,8 @@
 
 import { createAuthClient } from 'better-auth/react'
 
-// API URL for auth - defaults to localhost in dev, production API in prod
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787'
+// API URL - inlined at build time via next.config.js
+const API_URL = process.env.NEXT_PUBLIC_API_URL!
 
 export const authClient = createAuthClient({
   baseURL: `${API_URL}/auth`,

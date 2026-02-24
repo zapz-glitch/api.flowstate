@@ -7,8 +7,8 @@
 
 import { cookies } from 'next/headers'
 
-// Server-side API URL (can use internal URLs)
-const API_URL = process.env.API_URL || 'http://localhost:8787'
+// API URL - inlined at build time via next.config.js
+const API_URL = process.env.NEXT_PUBLIC_API_URL!
 
 // Helper to make authenticated API calls from server components
 async function fetchApi<T>(path: string, options: RequestInit = {}): Promise<T> {

@@ -13,7 +13,6 @@ import {
   ChevronRight,
   Code,
   RefreshCw,
-  Zap,
   StopCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -23,7 +22,6 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import {
-  runAnalysis,
   queueAnalysis,
   getJobStatus,
   type AnalyzeData,
@@ -31,6 +29,7 @@ import {
   type SubjectData,
   type ValuationData,
   type CompsData,
+  type ClassificationSummary,
 } from './actions'
 import { cn } from '@/lib/utils'
 import { useAnalysisWebSocket, useAnalysisPolling } from '@/hooks/use-analysis-websocket'
@@ -73,11 +72,51 @@ function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
+// ─── Classification Badge Component ─────────────────────────────────────────
+
+function ClassificationBadge({ classification, showConfidence = true }: { classification: ClassificationSummary | null | undefined; showConfidence?: boolean }) {
+  if (!classification) return null
+
+  const getClassificationStyle = (type: string) => {
+    switch (type) {
+      case 'as_is':
+        return 'bg-orange-500/10 text-orange-700 border-orange-500/30'
+      case 'after_renovation':
+        return 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30'
+      case 'transitional':
+        return 'bg-blue-500/10 text-blue-700 border-blue-500/30'
+      default:
+        return 'bg-gray-500/10 text-gray-700 border-gray-500/30'
+    }
+  }
+
+  const getClassificationLabel = (type: string) => {
+    switch (type) {
+      case 'as_is':
+        return 'As-Is'
+      case 'after_renovation':
+        return 'Renovated'
+      case 'transitional':
+        return 'Transitional'
+      default:
+        return type
+    }
+  }
+
+  return (
+    <Badge variant="outline" className={cn('font-medium', getClassificationStyle(classification.type))}>
+      {getClassificationLabel(classification.type)}
+      {showConfidence && classification.confidence > 0 && (
+        <span className="ml-1 opacity-70">({classification.confidence}%)</span>
+      )}
+    </Badge>
+  )
+}
+
 export default function AnalyzePage() {
   const [address, setAddress] = useState('')
   const [isRunning, setIsRunning] = useState(false)
   const [skipCache, setSkipCache] = useState(false)
-  const [useRealtime, setUseRealtime] = useState(true)
   const [result, setResult] = useState<{
     success: boolean
     data?: AnalyzeData
@@ -147,39 +186,8 @@ export default function AnalyzePage() {
     }
   }, [streamUrl, propertyKey, usePolling, wsConnect])
 
-  // Synchronous analysis handler (original behavior)
-  const handleSyncAnalyze = async () => {
-    if (!address.trim()) return
-
-    setIsRunning(true)
-    setResult(null)
-
-    try {
-      const response = await runAnalysis({
-        address: address.trim(),
-        photoAnalysis: { enabled: true, maxComps: 10, requireBetterOrEqual: true },
-        searchOptions: {
-          radiusMiles: 1,
-          maxComps: 10,
-          monthsBack: 12,
-        },
-        skipCache,
-      })
-
-      if (response.success) {
-        setResult({ success: true, data: response.data, timing: response.timing })
-      } else {
-        setResult({ success: false, error: response.error })
-      }
-    } catch (error) {
-      setResult({ success: false, error: error instanceof Error ? error.message : 'Analysis failed' })
-    } finally {
-      setIsRunning(false)
-    }
-  }
-
-  // Real-time analysis handler (new async behavior)
-  const handleRealtimeAnalyze = async () => {
+  // Analysis handler (async with real-time updates)
+  const handleAnalyze = async () => {
     if (!address.trim()) return
 
     setIsRunning(true)
@@ -215,15 +223,6 @@ export default function AnalyzePage() {
     } catch (error) {
       setResult({ success: false, error: error instanceof Error ? error.message : 'Failed to start analysis' })
       setIsRunning(false)
-    }
-  }
-
-  // Main analyze handler
-  const handleAnalyze = async () => {
-    if (useRealtime) {
-      await handleRealtimeAnalyze()
-    } else {
-      await handleSyncAnalyze()
     }
   }
 
@@ -273,7 +272,7 @@ export default function AnalyzePage() {
               }}
               className="flex-1"
             />
-            {isRunning && useRealtime ? (
+            {isRunning ? (
               <Button variant="destructive" onClick={handleCancel}>
                 <StopCircle className="w-4 h-4 mr-2" />
                 Cancel
@@ -306,24 +305,12 @@ export default function AnalyzePage() {
                 Skip cache
               </Label>
             </div>
-            <div className="flex items-center gap-2">
-              <Switch
-                id="async-mode"
-                checked={useRealtime}
-                onCheckedChange={setUseRealtime}
-                disabled={isRunning}
-              />
-              <Label htmlFor="async-mode" className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer">
-                <Zap className={cn("w-3.5 h-3.5", useRealtime && "text-emerald-500")} />
-                Async
-              </Label>
-            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Real-time Progress */}
-      {isRunning && useRealtime && (
+      {isRunning && (
         <RealtimeStatus
           state={analysisState}
           isConnecting={isConnecting}
@@ -398,6 +385,9 @@ function SubjectPropertyCard({ subject }: { subject: SubjectData }) {
         <CardTitle className="flex items-center gap-2">
           <MapPin className="w-5 h-5 text-primary" />
           Subject Property
+          {subject.classification && (
+            <ClassificationBadge classification={subject.classification} />
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -701,6 +691,9 @@ function CompCard({
                     {comp.condition}
                   </Badge>
                 )}
+                {comp.classification && (
+                  <ClassificationBadge classification={comp.classification} showConfidence={false} />
+                )}
               </div>
               <div className="text-sm text-muted-foreground mt-1">
                 {comp.distanceMiles !== undefined && comp.distanceMiles !== null && `${comp.distanceMiles.toFixed(2)} mi away`}
@@ -741,6 +734,22 @@ function CompCard({
             <div>
               <div className="text-sm font-medium text-muted-foreground">Subdivision</div>
               <div className="text-sm">{comp.subdivision}</div>
+            </div>
+          )}
+
+          {/* Classification Details */}
+          {comp.classification && (
+            <div>
+              <div className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                Classification
+                <ClassificationBadge classification={comp.classification} />
+              </div>
+              <div className="text-sm text-foreground/80 mt-1">{comp.classification.reasoning}</div>
+              {comp.weightInArv !== null && comp.weightInArv !== undefined && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  ARV Weight: {(comp.weightInArv * 100).toFixed(1)}%
+                </div>
+              )}
             </div>
           )}
 

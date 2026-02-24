@@ -6,6 +6,7 @@
 
 export { AnalysisJobDO } from './analysis-job'
 export { RateLimitCoordinatorDO } from './rate-limit-coordinator'
+export { FirecrawlRateLimiterDO } from './firecrawl-rate-limiter'
 
 // Re-export types
 export type {
