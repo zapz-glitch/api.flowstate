@@ -9,6 +9,7 @@ import {
   Home,
   FileText,
   Search,
+  Monitor,
   ChevronLeft,
   ChevronRight,
   Sun,
@@ -35,6 +36,7 @@ import {
 const navigation = [
   { name: 'Overview', href: '/dashboard', icon: Home },
   { name: 'API Playground', href: '/dashboard/analyze', icon: Search },
+  { name: 'Control Room', href: 'https://dash.flowstate.homes', icon: Monitor },
   { name: 'API Keys', href: '/dashboard/api-keys', icon: Key },
   { name: 'Usage', href: '/dashboard/usage', icon: BarChart3 },
   { name: 'API Logs', href: '/dashboard/logs', icon: FileText },
