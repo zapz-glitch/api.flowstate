@@ -17,6 +17,7 @@
     "db:migrate:remote": "turbo db:migrate:remote"
   },
   "devDependencies": {
+    "@esbuild/darwin-arm64": "^0.27.3",
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^3.0.3",
     "turbo": "^2.3.0",
