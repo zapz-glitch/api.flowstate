@@ -1,12 +1,14 @@
 import type { Metadata } from 'next'
-import { Inter, Source_Serif_4, JetBrains_Mono } from 'next/font/google'
+import localFont from 'next/font/local'
+import { Source_Serif_4 } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
 import { DesignProvider } from '@/components/design-provider'
 import { DesignLab } from '@/components/DesignLab'
 import './globals.css'
 
-const inter = Inter({
-  subsets: ['latin'],
+// Geist — closest shippable match to Apple's SF Pro (Apple's proprietary font).
+const geistSans = localFont({
+  src: './fonts/geist-var.woff2',
   variable: '--font-inter',
 })
 
@@ -16,8 +18,8 @@ const sourceSerif = Source_Serif_4({
   style: ['normal', 'italic'],
 })
 
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
+const geistMono = localFont({
+  src: './fonts/geist-mono-var.woff2',
   variable: '--font-mono',
 })
 
@@ -50,7 +52,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark" data-design="atlas" suppressHydrationWarning>
-      <body className={`${inter.variable} ${sourceSerif.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
+      <body className={`${geistSans.variable} ${sourceSerif.variable} ${geistMono.variable} font-sans antialiased`}>
         <script dangerouslySetInnerHTML={{ __html: initScript }} />
         <ThemeProvider>
           <DesignProvider>

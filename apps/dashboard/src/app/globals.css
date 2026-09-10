@@ -184,30 +184,32 @@
   }
 
   /* ── ATLAS ── devin-style precision: warm white, hairlines, engineered ────── */
+  /* Palette constraint: black copy + black buttons, light gray contrast,
+     air force blue as the single accent. */
   :root[data-design='atlas'] {
     --background: 45 20% 98%;
-    --foreground: 240 10% 9%;
+    --foreground: 240 6% 8%;
     --card: 0 0% 100%;
     --card-hover: 240 6% 97%;
-    --card-foreground: 240 10% 9%;
+    --card-foreground: 240 6% 8%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 9%;
-    --primary: 221 83% 53%;
+    --popover-foreground: 240 6% 8%;
+    --primary: 240 6% 8%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 240 6% 96%;
-    --secondary-foreground: 240 8% 15%;
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
-    --accent: 160 84% 32%;
-    --accent-secondary: 38 92% 50%;
+    --secondary: 240 5% 95%;
+    --secondary-foreground: 240 6% 14%;
+    --muted: 240 5% 95%;
+    --muted-foreground: 240 4% 42%;
+    --accent: 204 30% 51%;
+    --accent-secondary: 204 24% 64%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 51%;
+    --destructive: 240 5% 22%;
     --destructive-foreground: 0 0% 100%;
-    --success: 152 70% 34%;
-    --warning: 38 92% 46%;
-    --border: 240 6% 90%;
-    --input: 240 6% 85%;
-    --ring: 221 83% 53%;
+    --success: 204 30% 45%;
+    --warning: 240 4% 42%;
+    --border: 240 5% 90%;
+    --input: 240 5% 86%;
+    --ring: 204 30% 51%;
     --radius: 0.75rem;
     --panel-border-opacity: 1;
   }
@@ -220,22 +222,22 @@
     --card-foreground: 240 8% 94%;
     --popover: 240 7% 9%;
     --popover-foreground: 240 8% 94%;
-    --primary: 217 91% 64%;
+    --primary: 240 8% 96%;
     --primary-foreground: 240 8% 8%;
     --secondary: 240 6% 13%;
     --secondary-foreground: 240 8% 92%;
     --muted: 240 5% 15%;
     --muted-foreground: 240 6% 60%;
-    --accent: 160 84% 42%;
-    --accent-secondary: 38 95% 55%;
+    --accent: 204 35% 60%;
+    --accent-secondary: 204 24% 48%;
     --accent-foreground: 240 8% 8%;
-    --destructive: 0 75% 58%;
-    --destructive-foreground: 0 0% 100%;
-    --success: 152 70% 45%;
-    --warning: 38 95% 55%;
+    --destructive: 240 5% 80%;
+    --destructive-foreground: 240 8% 8%;
+    --success: 204 35% 58%;
+    --warning: 240 6% 62%;
     --border: 240 6% 16%;
     --input: 240 6% 20%;
-    --ring: 217 91% 64%;
+    --ring: 204 35% 60%;
     --radius: 0.75rem;
     --panel-border-opacity: 1;
   }
@@ -476,6 +478,13 @@ body {
   font-weight: 500;
 }
 
+/* Atlas: Apple/SF-style tight display tracking */
+[data-design='atlas'] h1,
+[data-design='atlas'] h2,
+[data-design='atlas'] h3 {
+  letter-spacing: -0.028em;
+}
+
 /* Data value — big numeric readout */
 .hud-value {
   font-variant-numeric: tabular-nums;
@@ -630,6 +639,44 @@ body {
 
 [data-design='atlas'] .glow-text {
   text-shadow: none;
+}
+
+/* Atlas palette constraint: collapse hardcoded semantic colors into
+   black / light gray / air force blue. Only applies in this variant. */
+[data-design='atlas'] [class*='text-emerald'],
+[data-design='atlas'] [class*='text-green'] {
+  color: hsl(var(--accent)) !important;
+}
+[data-design='atlas'] [class*='text-amber'],
+[data-design='atlas'] [class*='text-orange'],
+[data-design='atlas'] [class*='text-yellow'] {
+  color: hsl(var(--muted-foreground)) !important;
+}
+[data-design='atlas'] [class*='text-red'],
+[data-design='atlas'] [class*='text-rose'] {
+  color: hsl(var(--foreground)) !important;
+}
+[data-design='atlas'] [class*='bg-emerald'],
+[data-design='atlas'] [class*='bg-green'] {
+  background-color: hsl(var(--accent) / 0.12) !important;
+}
+[data-design='atlas'] [class*='bg-amber'],
+[data-design='atlas'] [class*='bg-orange'],
+[data-design='atlas'] [class*='bg-yellow'],
+[data-design='atlas'] [class*='bg-red'],
+[data-design='atlas'] [class*='bg-rose'] {
+  background-color: hsl(var(--secondary)) !important;
+}
+[data-design='atlas'] [class*='border-emerald'],
+[data-design='atlas'] [class*='border-green'] {
+  border-color: hsl(var(--accent) / 0.45) !important;
+}
+[data-design='atlas'] [class*='border-amber'],
+[data-design='atlas'] [class*='border-orange'],
+[data-design='atlas'] [class*='border-yellow'],
+[data-design='atlas'] [class*='border-red'],
+[data-design='atlas'] [class*='border-rose'] {
+  border-color: hsl(var(--border)) !important;
 }
 
 /* Legacy helpers still referenced in places */

@@ -224,9 +224,9 @@ export function Hero({ onGetStartedClick }: HeroProps) {
               <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 bg-secondary/60 border-b border-border">
                 <div className="flex items-center gap-2">
                   <div className="flex gap-1.5">
-                    <div className="w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full bg-red-500/80 transition-all hover:bg-red-500" />
-                    <div className="w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full bg-yellow-500/80 transition-all hover:bg-yellow-500" />
-                    <div className="w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full bg-green-500/80 transition-all hover:bg-green-500" />
+                    <div className="w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full bg-muted-foreground/40 transition-all hover:bg-muted-foreground/60" />
+                    <div className="w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full bg-muted-foreground/30 transition-all hover:bg-muted-foreground/50" />
+                    <div className="w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full bg-muted-foreground/20 transition-all hover:bg-muted-foreground/40" />
                   </div>
                   <div className="flex items-center gap-2 ml-2 sm:ml-3 text-muted-foreground text-xs sm:text-sm">
                     <Terminal className="h-3.5 sm:h-4 w-3.5 sm:w-4" />
@@ -239,8 +239,8 @@ export function Hero({ onGetStartedClick }: HeroProps) {
                 >
                   {copied ? (
                     <>
-                      <Check className="h-3.5 w-3.5 text-emerald-500" />
-                      <span className="text-emerald-500 hidden sm:inline">copied</span>
+                      <Check className="h-3.5 w-3.5 text-accent" />
+                      <span className="text-accent hidden sm:inline">copied</span>
                     </>
                   ) : (
                     <>
@@ -290,7 +290,7 @@ export function Hero({ onGetStartedClick }: HeroProps) {
                         </div>
                       )}
                       {line.type === 'success' && (
-                        <div className="flex items-center gap-2 ml-4 text-emerald-500 text-xs mt-2">
+                        <div className="flex items-center gap-2 ml-4 text-accent text-xs mt-2">
                           <Check className="h-3.5 w-3.5" />
                           <span>{line.content}</span>
                         </div>
