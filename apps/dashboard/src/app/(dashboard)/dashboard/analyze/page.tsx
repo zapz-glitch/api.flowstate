@@ -127,6 +127,7 @@ export default function AnalyzePage() {
 
   // Real-time analysis state
   const [streamUrl, setStreamUrl] = useState<string | null>(null)
+  const [pollUrl, setPollUrl] = useState<string | null>(null)
   const [propertyKey, setPropertyKey] = useState<string | null>(null)
   const [jobId, setJobId] = useState<string | null>(null)
   const [usePolling, setUsePolling] = useState(false)
@@ -170,7 +171,7 @@ export default function AnalyzePage() {
 
   // Polling hook (fallback)
   const { state: pollState, isPolling, reset: pollReset } = useAnalysisPolling({
-    url: jobId ? `/api/analyze/jobs/${jobId}` : null,
+    url: pollUrl,
     propertyKey,
     enabled: usePolling && isRunning,
     onComplete: handleRealtimeComplete,
@@ -193,6 +194,7 @@ export default function AnalyzePage() {
     setIsRunning(true)
     setResult(null)
     setStreamUrl(null)
+    setPollUrl(null)
     setPropertyKey(null)
     setJobId(null)
     setUsePolling(false)
@@ -214,6 +216,7 @@ export default function AnalyzePage() {
       if (response.success && response.streamUrl && response.propertyKey) {
         setJobId(response.jobId || null)
         setStreamUrl(response.streamUrl)
+        setPollUrl(response.pollUrl || null)
         setPropertyKey(response.propertyKey)
         // WebSocket will connect via useEffect
       } else {
@@ -231,6 +234,7 @@ export default function AnalyzePage() {
     wsDisconnect()
     setIsRunning(false)
     setStreamUrl(null)
+    setPollUrl(null)
     setPropertyKey(null)
     setJobId(null)
   }

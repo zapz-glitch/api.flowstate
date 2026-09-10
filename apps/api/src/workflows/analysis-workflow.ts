@@ -98,7 +98,7 @@ export class AnalysisWorkflow extends WorkflowEntrypoint<Env, AnalysisWorkflowPa
       stepTimings['property_fetch'] = Date.now() - bundleStart
       console.log(`[AnalysisWorkflow] Property bundle fetched: ${bundle.comparables.length} comps`)
 
-      await this.updateProgress(params.jobId, 'property_fetch', 'completed')
+      await this.updateProgress(params, 'property_fetch', 'completed')
 
       // ═══════════════════════════════════════════════════════════════════════
       // STEP 2: Apply Appraisal Rules
@@ -129,7 +129,7 @@ export class AnalysisWorkflow extends WorkflowEntrypoint<Env, AnalysisWorkflowPa
       const enabledComps = appraisalResult.comparables.filter((c) => c.isEnabled)
       console.log(`[AnalysisWorkflow] Appraisal complete: ${enabledComps.length} comps enabled`)
 
-      await this.updateProgress(params.jobId, 'appraisal_rules', 'completed')
+      await this.updateProgress(params, 'appraisal_rules', 'completed')
 
       // ═══════════════════════════════════════════════════════════════════════
       // STEP 3: Parallel Photo Fetch (Fan-Out)
@@ -158,7 +158,7 @@ export class AnalysisWorkflow extends WorkflowEntrypoint<Env, AnalysisWorkflowPa
       stepTimings['photo_fetch'] = Date.now() - photoStart
       console.log(`[AnalysisWorkflow] Photos fetched: subject=${!!photoBundle?.subject}, comps=${Object.keys(photoBundle?.comps ?? {}).length}`)
 
-      await this.updateProgress(params.jobId, 'photo_fetch', 'completed')
+      await this.updateProgress(params, 'photo_fetch', 'completed')
 
       // ═══════════════════════════════════════════════════════════════════════
       // STEP 4: Batch Classification (1-2 LLM calls instead of 11)
@@ -205,7 +205,7 @@ export class AnalysisWorkflow extends WorkflowEntrypoint<Env, AnalysisWorkflowPa
       stepTimings['classification'] = Date.now() - classifyStart
       console.log(`[AnalysisWorkflow] Classification complete: ${compClassifications.size} comps classified in ${classificationResult.llmCalls} LLM calls`)
 
-      await this.updateProgress(params.jobId, 'comp_selection', 'completed')
+      await this.updateProgress(params, 'comp_selection', 'completed')
 
       // ═══════════════════════════════════════════════════════════════════════
       // STEP 5: Calculate ARV and Build Response
@@ -231,17 +231,17 @@ export class AnalysisWorkflow extends WorkflowEntrypoint<Env, AnalysisWorkflowPa
 
       stepTimings['arv_calculation'] = Date.now() - arvStart
 
-      await this.updateProgress(params.jobId, 'valuation', 'completed')
+      await this.updateProgress(params, 'valuation', 'completed')
 
       // ═══════════════════════════════════════════════════════════════════════
       // STEP 6: Store Result in Durable Object
       // ═══════════════════════════════════════════════════════════════════════
       await step.do('store-result', { timeout: '10 seconds' }, async () => {
-        await this.storeResult(params.jobId, response)
+        await this.storeResult(params, response)
         return { stored: true }
       })
 
-      await this.updateProgress(params.jobId, 'response_build', 'completed')
+      await this.updateProgress(params, 'response_build', 'completed')
 
       const completedAt = new Date().toISOString()
       const durationMs = Date.now() - new Date(startedAt).getTime()
@@ -266,7 +266,7 @@ export class AnalysisWorkflow extends WorkflowEntrypoint<Env, AnalysisWorkflowPa
       console.error(`[AnalysisWorkflow] Job ${params.jobId} failed:`, errorMessage)
 
       // Store error in DO
-      await this.storeError(params.jobId, errorMessage)
+      await this.storeError(params, errorMessage)
 
       return {
         success: false,
@@ -515,13 +515,22 @@ export class AnalysisWorkflow extends WorkflowEntrypoint<Env, AnalysisWorkflowPa
   /**
    * Update progress in Durable Object
    */
+  /**
+   * The AnalysisJob DO is named `${userId}:${propertyKey}` — the same name the
+   * analyze route initializes and the status/WS endpoints resolve. Fall back to
+   * the jobId-named DO only for jobs started before propertyKey was passed.
+   */
+  private jobDOName(params: AnalysisWorkflowParams): string {
+    return params.propertyKey ? `${params.userId}:${params.propertyKey}` : params.jobId
+  }
+
   private async updateProgress(
-    jobId: string,
+    params: AnalysisWorkflowParams,
     stepName: string,
     status: 'in_progress' | 'completed' | 'failed'
   ): Promise<void> {
     try {
-      const doId = this.env.ANALYSIS_JOB.idFromName(jobId)
+      const doId = this.env.ANALYSIS_JOB.idFromName(this.jobDOName(params))
       const stub = this.env.ANALYSIS_JOB.get(doId)
 
       await stub.fetch(
@@ -539,8 +548,8 @@ export class AnalysisWorkflow extends WorkflowEntrypoint<Env, AnalysisWorkflowPa
   /**
    * Store result in Durable Object
    */
-  private async storeResult(jobId: string, result: AnalysisResponse): Promise<void> {
-    const doId = this.env.ANALYSIS_JOB.idFromName(jobId)
+  private async storeResult(params: AnalysisWorkflowParams, result: AnalysisResponse): Promise<void> {
+    const doId = this.env.ANALYSIS_JOB.idFromName(this.jobDOName(params))
     const stub = this.env.ANALYSIS_JOB.get(doId)
 
     await stub.fetch(
@@ -554,9 +563,9 @@ export class AnalysisWorkflow extends WorkflowEntrypoint<Env, AnalysisWorkflowPa
   /**
    * Store error in Durable Object
    */
-  private async storeError(jobId: string, errorMessage: string): Promise<void> {
+  private async storeError(params: AnalysisWorkflowParams, errorMessage: string): Promise<void> {
     try {
-      const doId = this.env.ANALYSIS_JOB.idFromName(jobId)
+      const doId = this.env.ANALYSIS_JOB.idFromName(this.jobDOName(params))
       const stub = this.env.ANALYSIS_JOB.get(doId)
 
       await stub.fetch(

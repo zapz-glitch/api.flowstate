@@ -15,6 +15,7 @@ import {
   Moon,
   ChevronsUpDown,
   User,
+  SlidersHorizontal,
 } from 'lucide-react'
 import { signOut } from '@/lib/auth-client'
 import { Logo } from '@/components/ui/Logo'
@@ -35,9 +36,10 @@ import {
 const navigation = [
   { name: 'Overview', href: '/dashboard', icon: Home, code: '01' },
   { name: 'API Playground', href: '/dashboard/analyze', icon: Search, code: '02' },
-  { name: 'API Keys', href: '/dashboard/api-keys', icon: Key, code: '03' },
-  { name: 'Usage', href: '/dashboard/usage', icon: BarChart3, code: '04' },
-  { name: 'API Logs', href: '/dashboard/logs', icon: FileText, code: '05' },
+  { name: 'Evaluation', href: '/dashboard/evaluation', icon: SlidersHorizontal, code: '03' },
+  { name: 'API Keys', href: '/dashboard/api-keys', icon: Key, code: '04' },
+  { name: 'Usage', href: '/dashboard/usage', icon: BarChart3, code: '05' },
+  { name: 'API Logs', href: '/dashboard/logs', icon: FileText, code: '06' },
 ]
 
 export default function Sidebar() {
