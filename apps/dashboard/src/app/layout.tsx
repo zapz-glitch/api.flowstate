@@ -29,11 +29,11 @@ export const metadata: Metadata = {
 // Restore the saved design variant + theme before paint to avoid a flash.
 const initScript = `
   try {
-    var d = localStorage.getItem('design-variant');
+    var d = localStorage.getItem('design-variant-v2');
     if (d === 'command' || d === 'aurora' || d === 'editorial') {
       document.documentElement.dataset.design = d;
     } else {
-      document.documentElement.dataset.design = 'command';
+      document.documentElement.dataset.design = 'aurora';
     }
     var t = localStorage.getItem('theme');
     if (t === 'light') {
@@ -49,7 +49,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="dark" data-design="command" suppressHydrationWarning>
+    <html lang="en" className="dark" data-design="aurora" suppressHydrationWarning>
       <body className={`${inter.variable} ${sourceSerif.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
         <script dangerouslySetInnerHTML={{ __html: initScript }} />
         <ThemeProvider>

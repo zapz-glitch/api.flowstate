@@ -4,6 +4,9 @@ import { createContext, useContext, useEffect, useState } from 'react'
 
 export type DesignVariant = 'command' | 'aurora' | 'editorial'
 
+export const DEFAULT_DESIGN: DesignVariant = 'aurora'
+const STORAGE_KEY = 'design-variant-v2'
+
 export const DESIGN_VARIANTS: { id: DesignVariant; label: string; hint: string }[] = [
   { id: 'command', label: 'Command Center', hint: 'Phosphor console' },
   { id: 'aurora', label: 'Aurora', hint: 'Glass + gradient mesh' },
@@ -16,15 +19,15 @@ interface DesignContextType {
 }
 
 const DesignContext = createContext<DesignContextType>({
-  design: 'command',
+  design: DEFAULT_DESIGN,
   setDesign: () => {},
 })
 
 export function DesignProvider({ children }: { children: React.ReactNode }) {
-  const [design, setDesignState] = useState<DesignVariant>('command')
+  const [design, setDesignState] = useState<DesignVariant>(DEFAULT_DESIGN)
 
   useEffect(() => {
-    const stored = localStorage.getItem('design-variant') as DesignVariant | null
+    const stored = localStorage.getItem(STORAGE_KEY) as DesignVariant | null
     if (stored && DESIGN_VARIANTS.some((v) => v.id === stored)) {
       setDesignState(stored)
       document.documentElement.dataset.design = stored
@@ -34,7 +37,7 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
   const setDesign = (next: DesignVariant) => {
     setDesignState(next)
     document.documentElement.dataset.design = next
-    localStorage.setItem('design-variant', next)
+    localStorage.setItem(STORAGE_KEY, next)
   }
 
   return (
