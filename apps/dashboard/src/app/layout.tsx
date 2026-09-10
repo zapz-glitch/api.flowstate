@@ -29,14 +29,14 @@ export const metadata: Metadata = {
 // Restore the saved design variant + theme before paint to avoid a flash.
 const initScript = `
   try {
-    var d = localStorage.getItem('design-variant-v2');
-    if (d === 'command' || d === 'aurora' || d === 'editorial') {
+    var d = localStorage.getItem('design-variant-v3');
+    if (d === 'atlas' || d === 'command' || d === 'aurora' || d === 'editorial') {
       document.documentElement.dataset.design = d;
     } else {
-      document.documentElement.dataset.design = 'aurora';
+      document.documentElement.dataset.design = 'atlas';
     }
-    var t = localStorage.getItem('theme');
-    if (t === 'light') {
+    var t = localStorage.getItem('theme-v2');
+    if (t === 'light' || (!t && document.documentElement.dataset.design === 'atlas')) {
       document.documentElement.classList.remove('dark');
       document.documentElement.classList.add('light');
     }
@@ -49,7 +49,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="dark" data-design="aurora" suppressHydrationWarning>
+    <html lang="en" className="dark" data-design="atlas" suppressHydrationWarning>
       <body className={`${inter.variable} ${sourceSerif.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
         <script dangerouslySetInnerHTML={{ __html: initScript }} />
         <ThemeProvider>

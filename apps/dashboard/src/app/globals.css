@@ -183,6 +183,63 @@
     --panel-border-opacity: 1;
   }
 
+  /* ── ATLAS ── devin-style precision: warm white, hairlines, engineered ────── */
+  :root[data-design='atlas'] {
+    --background: 45 20% 98%;
+    --foreground: 240 10% 9%;
+    --card: 0 0% 100%;
+    --card-hover: 240 6% 97%;
+    --card-foreground: 240 10% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 9%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 6% 96%;
+    --secondary-foreground: 240 8% 15%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
+    --accent: 160 84% 32%;
+    --accent-secondary: 38 92% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 70% 34%;
+    --warning: 38 92% 46%;
+    --border: 240 6% 90%;
+    --input: 240 6% 85%;
+    --ring: 221 83% 53%;
+    --radius: 0.75rem;
+    --panel-border-opacity: 1;
+  }
+
+  .dark[data-design='atlas'] {
+    --background: 240 8% 6%;
+    --foreground: 240 8% 94%;
+    --card: 240 7% 9%;
+    --card-hover: 240 6% 12%;
+    --card-foreground: 240 8% 94%;
+    --popover: 240 7% 9%;
+    --popover-foreground: 240 8% 94%;
+    --primary: 217 91% 64%;
+    --primary-foreground: 240 8% 8%;
+    --secondary: 240 6% 13%;
+    --secondary-foreground: 240 8% 92%;
+    --muted: 240 5% 15%;
+    --muted-foreground: 240 6% 60%;
+    --accent: 160 84% 42%;
+    --accent-secondary: 38 95% 55%;
+    --accent-foreground: 240 8% 8%;
+    --destructive: 0 75% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 70% 45%;
+    --warning: 38 95% 55%;
+    --border: 240 6% 16%;
+    --input: 240 6% 20%;
+    --ring: 217 91% 64%;
+    --radius: 0.75rem;
+    --panel-border-opacity: 1;
+  }
+
   * {
     @apply border-border;
   }
@@ -326,6 +383,25 @@ body {
   background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent-secondary)));
 }
 
+/* Atlas: hairline engineering grid + soft accent wash, devin.ai-style */
+[data-design='atlas'] .scene {
+  background:
+    linear-gradient(hsl(var(--border) / 0.55) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--border) / 0.55) 1px, transparent 1px),
+    radial-gradient(ellipse 60% 45% at 70% -5%, hsl(var(--primary) / 0.07), transparent 65%),
+    radial-gradient(ellipse 40% 35% at 10% 110%, hsl(var(--accent) / 0.05), transparent 65%),
+    hsl(var(--background));
+  background-size: 28px 28px, 28px 28px, 100% 100%, 100% 100%, 100% 100%;
+}
+
+[data-design='atlas'] .scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  /* fade the grid out toward the middle so content areas stay clean */
+  background: radial-gradient(ellipse 70% 60% at 50% 40%, transparent 40%, hsl(var(--background) / 0.7) 100%);
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    SHARED SURFACE PRIMITIVES
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -369,6 +445,16 @@ body {
   box-shadow: 0 4px 16px hsl(var(--foreground) / 0.06);
 }
 
+/* Atlas: paper card, hairline border, micro-shadow lift on hover */
+[data-design='atlas'] .ui-panel {
+  box-shadow: 0 1px 2px hsl(var(--foreground) / 0.04);
+}
+
+[data-design='atlas'] .ui-panel:hover {
+  border-color: hsl(var(--foreground) / 0.18);
+  box-shadow: 0 2px 4px hsl(var(--foreground) / 0.04), 0 8px 24px hsl(var(--foreground) / 0.06);
+}
+
 /* HUD micro-label — mono/caps in command, refined small caps elsewhere */
 .hud-label {
   font-size: 0.6875rem;
@@ -381,6 +467,13 @@ body {
 :not([data-design]) .hud-label {
   font-family: var(--font-mono), ui-monospace, monospace;
   letter-spacing: 0.14em;
+}
+
+/* Atlas: devin-style mono micro-labels */
+[data-design='atlas'] .hud-label {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  letter-spacing: 0.12em;
+  font-weight: 500;
 }
 
 /* Data value — big numeric readout */
@@ -520,13 +613,23 @@ body {
 }
 
 /* Aurora gradient text */
-[data-design='aurora'] .hero-gradient-text {
+[data-design='aurora'] .hero-gradient-text,
+[data-design='atlas'] .hero-gradient-text {
   background: linear-gradient(120deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--accent-secondary)));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   background-size: 200% 200%;
   animation: gradient-shift 6s ease infinite;
+}
+
+/* Atlas: no neon glows — replace glow shadows with a crisp paper shadow */
+[data-design='atlas'] [class*='shadow-[0_0_'] {
+  box-shadow: 0 1px 2px hsl(var(--foreground) / 0.05), 0 6px 20px hsl(var(--foreground) / 0.07) !important;
+}
+
+[data-design='atlas'] .glow-text {
+  text-shadow: none;
 }
 
 /* Legacy helpers still referenced in places */

@@ -4,6 +4,8 @@ import { createContext, useContext, useEffect, useState } from 'react'
 
 type Theme = 'dark' | 'light'
 
+const STORAGE_KEY = 'theme-v2'
+
 interface ThemeContextType {
   theme: Theme
   toggleTheme: () => void
@@ -11,19 +13,30 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
+function readInitialTheme(): Theme {
+  const stored = localStorage.getItem(STORAGE_KEY) as Theme | null
+  if (stored === 'dark' || stored === 'light') return stored
+  // Atlas is light-first; other variants default dark
+  if (document.documentElement.dataset.design === 'atlas') return 'light'
+  if (window.matchMedia('(prefers-color-scheme: light)').matches) return 'light'
+  return 'dark'
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark')
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
-    // Check localStorage or system preference
-    const stored = localStorage.getItem('theme') as Theme | null
-    if (stored) {
-      setTheme(stored)
-    } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
-      setTheme('light')
+    setTheme(readInitialTheme())
+
+    // Re-sync when another provider (e.g. DesignProvider) changes the theme
+    const onSync = () => {
+      const stored = localStorage.getItem(STORAGE_KEY) as Theme | null
+      if (stored === 'dark' || stored === 'light') setTheme(stored)
     }
+    window.addEventListener('fs-theme-sync', onSync)
+    return () => window.removeEventListener('fs-theme-sync', onSync)
   }, [])
 
   useEffect(() => {
@@ -37,7 +50,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       root.classList.remove('dark')
       root.classList.add('light')
     }
-    localStorage.setItem('theme', theme)
+    localStorage.setItem(STORAGE_KEY, theme)
   }, [theme, mounted])
 
   const toggleTheme = () => {
