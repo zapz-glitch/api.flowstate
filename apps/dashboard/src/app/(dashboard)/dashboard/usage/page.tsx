@@ -1,5 +1,6 @@
 import { getApiKeys, getUsageSummary, getUsageLogs } from '@/lib/api'
 import { PLAN_LIMITS } from '@flowstate-api/db'
+import { BarChart3 } from 'lucide-react'
 
 async function getUsageData() {
   try {
@@ -49,7 +50,7 @@ export default async function UsagePage() {
   const data = await getUsageData()
 
   if (!data) {
-    return <div>Loading...</div>
+    return <div className="hud-label p-6">Loading…</div>
   }
 
   const quotaPercent = data.accountQuota
@@ -61,46 +62,48 @@ export default async function UsagePage() {
   const requestsToday = data.logs.filter((l) => l.createdAt.startsWith(today)).length
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-6xl">
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Usage</h1>
-        <p className="text-neutral-600 dark:text-neutral-400 mt-1">
+        <div className="hud-label mb-2 flex items-center gap-2">
+          <BarChart3 className="w-3.5 h-3.5 text-primary" />
+          Metering
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">Usage</h1>
+        <p className="text-muted-foreground mt-1 text-sm">
           Monitor your API usage and requests
         </p>
       </div>
 
-      {/* Account Quota Progress */}
-      <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-6">
+      {/* Account Quota */}
+      <div className="ui-panel p-6">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Account Quota</h2>
-          <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400 capitalize">
-            {data.plan} Plan
-          </span>
+          <h2 className="text-base font-semibold text-foreground">Account Quota</h2>
+          <span className="hud-label capitalize">{data.plan} plan</span>
         </div>
-        <div className="flex items-baseline gap-2 mb-3">
-          <span className="text-3xl font-bold text-neutral-900 dark:text-white">
+        <div className="flex items-baseline gap-2 mb-4">
+          <span className="hud-value text-4xl font-bold text-foreground">
             {data.totalUsage.toLocaleString()}
           </span>
-          <span className="text-neutral-500">
-            / {data.accountQuota ? data.accountQuota.toLocaleString() : 'Unlimited'} requests
+          <span className="text-muted-foreground font-mono text-sm">
+            / {data.accountQuota ? data.accountQuota.toLocaleString() : '∞'} requests
           </span>
         </div>
         {data.accountQuota && (
-          <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-3">
+          <div className="w-full bg-secondary rounded-full h-2.5 overflow-hidden">
             <div
-              className={`h-3 rounded-full transition-all ${
+              className={`h-2.5 rounded-full transition-all ${
                 quotaPercent >= 90
-                  ? 'bg-red-500'
+                  ? 'bg-destructive shadow-[0_0_10px_hsl(var(--destructive)/0.5)]'
                   : quotaPercent >= 75
-                    ? 'bg-yellow-500'
-                    : 'bg-green-500'
+                    ? 'bg-warning shadow-[0_0_10px_hsl(var(--warning)/0.5)]'
+                    : 'bg-primary shadow-[0_0_10px_hsl(var(--primary)/0.5)]'
               }`}
               style={{ width: `${quotaPercent}%` }}
             />
           </div>
         )}
         {data.accountQuota && (
-          <p className="text-sm text-neutral-500 mt-2">
+          <p className="hud-label mt-2">
             {data.accountQuota - data.totalUsage > 0
               ? `${(data.accountQuota - data.totalUsage).toLocaleString()} requests remaining`
               : 'Quota exceeded'}
@@ -109,45 +112,24 @@ export default async function UsagePage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-6">
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">Active Keys</p>
-          <p className="text-3xl font-bold text-neutral-900 dark:text-white mt-1">
-            {data.keys.filter((k) => k.isActive).length}
-          </p>
-          <p className="text-sm text-neutral-500 mt-1">
-            of {data.planLimits.maxApiKeys === -1 ? '∞' : data.planLimits.maxApiKeys} allowed
-          </p>
-        </div>
-
-        <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-6">
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">Requests Today</p>
-          <p className="text-3xl font-bold text-neutral-900 dark:text-white mt-1">{requestsToday}</p>
-        </div>
-
-        <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-6">
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">Success Rate</p>
-          <p className="text-3xl font-bold text-neutral-900 dark:text-white mt-1">
-            {data.successRate}%
-          </p>
-          <p className="text-sm text-neutral-500 mt-1">2xx responses</p>
-        </div>
-
-        <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-6">
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">Avg Response Time</p>
-          <p className="text-3xl font-bold text-neutral-900 dark:text-white mt-1">
-            {data.avgResponseTime}ms
-          </p>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <UsageStat
+          label="Active Keys"
+          value={data.keys.filter((k) => k.isActive).length.toString()}
+          sub={`of ${data.planLimits.maxApiKeys === -1 ? '∞' : data.planLimits.maxApiKeys} allowed`}
+        />
+        <UsageStat label="Requests Today" value={requestsToday.toString()} />
+        <UsageStat label="Success Rate" value={`${data.successRate}%`} sub="2xx responses" />
+        <UsageStat label="Avg Response" value={`${data.avgResponseTime}ms`} />
       </div>
 
       {/* Per-Key Usage */}
       {data.keys.length > 0 && (
-        <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-6">
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
+        <div className="ui-panel p-6">
+          <h2 className="text-base font-semibold text-foreground mb-5">
             Usage per API Key
           </h2>
-          <div className="space-y-4">
+          <div className="space-y-5">
             {data.keys.map((key) => {
               const keyQuota = key.monthlyQuota || data.planLimits.monthlyRequests
               const keyPercent =
@@ -156,40 +138,40 @@ export default async function UsagePage() {
                   : Math.min(100, Math.round((key.currentUsage / keyQuota) * 100))
               return (
                 <div key={key.id}>
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-neutral-900 dark:text-white">{key.name}</span>
-                      <code className="text-xs text-neutral-500 bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded">
-                        {key.keyPrefix}...
+                      <span className="font-medium text-foreground text-sm">{key.name}</span>
+                      <code className="text-xs text-muted-foreground bg-secondary px-1.5 py-0.5 rounded font-mono">
+                        {key.keyPrefix}…
                       </code>
                       {!key.isActive && (
-                        <span className="text-xs text-red-500 bg-red-100 dark:bg-red-900/30 px-1.5 py-0.5 rounded">
-                          Disabled
+                        <span className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded font-mono">
+                          DISABLED
                         </span>
                       )}
                     </div>
-                    <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                    <span className="text-sm text-muted-foreground font-mono">
                       {key.currentUsage.toLocaleString()}{' '}
                       {keyQuota !== -1 && `/ ${keyQuota.toLocaleString()}`}
                     </span>
                   </div>
                   {keyQuota !== -1 && (
-                    <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
+                    <div className="w-full bg-secondary rounded-full h-1.5 overflow-hidden">
                       <div
-                        className={`h-2 rounded-full transition-all ${
+                        className={`h-1.5 rounded-full transition-all ${
                           keyPercent >= 90
-                            ? 'bg-red-500'
+                            ? 'bg-destructive'
                             : keyPercent >= 75
-                              ? 'bg-yellow-500'
-                              : 'bg-blue-500'
+                              ? 'bg-warning'
+                              : 'bg-primary'
                         }`}
                         style={{ width: `${keyPercent}%` }}
                       />
                     </div>
                   )}
                   {key.lastUsedAt && (
-                    <p className="text-xs text-neutral-500 mt-1">
-                      Last used: {new Date(key.lastUsedAt).toLocaleString()}
+                    <p className="text-xs text-muted-foreground mt-1 font-mono">
+                      last used {new Date(key.lastUsedAt).toLocaleString()}
                     </p>
                   )}
                 </div>
@@ -200,61 +182,53 @@ export default async function UsagePage() {
       )}
 
       {/* Recent requests */}
-      <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Recent Requests</h2>
+      <div className="ui-panel overflow-hidden">
+        <div className="px-5 py-4 border-b border-border">
+          <h2 className="text-base font-semibold text-foreground">Recent Requests</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50">
-                <th className="text-left px-6 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                  Time
-                </th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                  Endpoint
-                </th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                  Status
-                </th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                  Response Time
-                </th>
+              <tr className="border-b border-border bg-secondary/50">
+                <th className="text-left px-5 py-3 hud-label">Time</th>
+                <th className="text-left px-5 py-3 hud-label">Endpoint</th>
+                <th className="text-left px-5 py-3 hud-label">Status</th>
+                <th className="text-left px-5 py-3 hud-label">Latency</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
+            <tbody className="divide-y divide-border">
               {data.logs.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-neutral-500">
+                  <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground text-sm">
                     No requests yet
                   </td>
                 </tr>
               ) : (
                 data.logs.slice(0, 20).map((log) => (
-                  <tr key={log.id}>
-                    <td className="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
+                  <tr key={log.id} className="hover:bg-secondary/40 transition-colors">
+                    <td className="px-5 py-3.5 text-sm text-muted-foreground font-mono whitespace-nowrap">
                       {new Date(log.createdAt).toLocaleString()}
                     </td>
-                    <td className="px-6 py-4">
-                      <code className="text-sm text-neutral-600 dark:text-neutral-400 font-mono">
+                    <td className="px-5 py-3.5">
+                      <code className="text-sm text-muted-foreground font-mono">
                         {log.endpoint}
                       </code>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3.5">
                       <span
-                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-mono ${
                           log.statusCode >= 200 && log.statusCode < 300
-                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                            ? 'bg-emerald-500/10 text-emerald-500'
                             : log.statusCode >= 400
-                              ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                              : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+                              ? 'bg-red-500/10 text-red-500'
+                              : 'bg-amber-500/10 text-amber-500'
                         }`}
                       >
                         {log.statusCode}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
-                      {log.responseTimeMs ? `${log.responseTimeMs}ms` : '-'}
+                    <td className="px-5 py-3.5 text-sm text-muted-foreground font-mono">
+                      {log.responseTimeMs ? `${log.responseTimeMs}ms` : '—'}
                     </td>
                   </tr>
                 ))
@@ -263,6 +237,16 @@ export default async function UsagePage() {
           </table>
         </div>
       </div>
+    </div>
+  )
+}
+
+function UsageStat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="ui-panel px-4 py-3.5">
+      <p className="hud-label mb-1.5">{label}</p>
+      <p className="hud-value text-2xl font-semibold text-foreground">{value}</p>
+      {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
     </div>
   )
 }

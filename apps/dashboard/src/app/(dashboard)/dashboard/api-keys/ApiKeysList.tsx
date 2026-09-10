@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Plus, Copy, Trash2, ToggleLeft, ToggleRight, Check } from 'lucide-react'
+import { Plus, Copy, Trash2, ToggleLeft, ToggleRight, Check, ShieldCheck } from 'lucide-react'
 import { createApiKey, deleteApiKey, toggleApiKey } from './actions'
 
 interface ApiKey {
@@ -101,45 +101,47 @@ export default function ApiKeysList({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Plan info */}
-      <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
-              {plan.charAt(0).toUpperCase() + plan.slice(1)} Plan
-            </span>
-            <p className="text-sm text-primary-600 dark:text-primary-400 mt-1">
-              {limits.maxApiKeys === -1
-                ? 'Unlimited API keys'
-                : `${keys.length} / ${limits.maxApiKeys} API keys`}
-              {' | '}
-              {limits.monthlyRequests === -1
-                ? 'Unlimited requests'
-                : `${limits.monthlyRequests.toLocaleString()} requests/month`}
-            </p>
-          </div>
+      <div className="ui-panel px-5 py-4 flex items-center gap-4">
+        <div className="w-9 h-9 rounded-md bg-primary/10 border border-primary/30 flex items-center justify-center flex-shrink-0">
+          <ShieldCheck className="w-5 h-5 text-primary" />
+        </div>
+        <div>
+          <span className="text-sm font-semibold text-foreground capitalize">
+            {plan} Plan
+          </span>
+          <p className="text-sm text-muted-foreground font-mono text-xs mt-0.5">
+            {limits.maxApiKeys === -1
+              ? 'unlimited keys'
+              : `${keys.length} / ${limits.maxApiKeys} keys`}
+            {' · '}
+            {limits.monthlyRequests === -1
+              ? 'unlimited requests'
+              : `${limits.monthlyRequests.toLocaleString()} req/mo`}
+          </p>
         </div>
       </div>
 
       {/* New key modal */}
       {newKey && (
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-          <h3 className="font-medium text-green-700 dark:text-green-300 mb-2">
-            API Key Created!
+        <div className="ui-panel border-emerald-500/40 bg-emerald-500/5 p-5">
+          <h3 className="font-medium text-emerald-500 mb-1 flex items-center gap-2">
+            <Check className="w-4 h-4" />
+            API Key Created
           </h3>
-          <p className="text-sm text-green-600 dark:text-green-400 mb-3">
+          <p className="text-sm text-muted-foreground mb-3">
             Copy your API key now. You won&apos;t be able to see it again.
           </p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 bg-white dark:bg-neutral-800 px-3 py-2 rounded border border-green-200 dark:border-green-800 text-sm font-mono text-neutral-900 dark:text-white">
+            <code className="flex-1 bg-background/70 px-3 py-2.5 rounded-md border border-emerald-500/30 text-sm font-mono text-foreground overflow-x-auto">
               {newKey}
             </code>
             <button
               onClick={handleCopy}
-              className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              className="p-2.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-500 transition-colors flex-shrink-0"
             >
-              {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
           <button
@@ -147,7 +149,7 @@ export default function ApiKeysList({
               setNewKey(null)
               setShowCreate(false)
             }}
-            className="mt-3 text-sm text-green-600 dark:text-green-400 hover:underline"
+            className="mt-3 text-sm text-emerald-500 hover:underline"
           >
             I&apos;ve copied the key
           </button>
@@ -156,10 +158,10 @@ export default function ApiKeysList({
 
       {/* Create form */}
       {showCreate && !newKey && (
-        <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-800 p-4">
-          <form onSubmit={handleCreate} className="flex items-end gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+        <div className="ui-panel p-5">
+          <form onSubmit={handleCreate} className="flex items-end gap-3 flex-wrap">
+            <div className="flex-1 min-w-[200px]">
+              <label className="hud-label block mb-1.5">
                 Key Name (optional)
               </label>
               <input
@@ -167,26 +169,26 @@ export default function ApiKeysList({
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
                 placeholder="e.g., Production API Key"
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                className="w-full px-3 py-2.5 border border-border rounded-md bg-secondary/60 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50"
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50"
+              className="px-5 py-2.5 bg-primary text-primary-foreground rounded-md font-medium hover:opacity-90 disabled:opacity-50 font-mono text-sm uppercase tracking-wider"
             >
-              {loading ? 'Creating...' : 'Create'}
+              {loading ? 'Creating…' : 'Create'}
             </button>
             <button
               type="button"
               onClick={() => setShowCreate(false)}
-              className="px-4 py-2 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+              className="px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground"
             >
               Cancel
             </button>
           </form>
           {error && (
-            <p className="text-sm text-red-600 dark:text-red-400 mt-2">{error}</p>
+            <p className="text-sm text-destructive mt-2 font-mono">{error}</p>
           )}
         </div>
       )}
@@ -195,104 +197,92 @@ export default function ApiKeysList({
       {!showCreate && !newKey && canCreateMore && (
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700"
+          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-md font-medium hover:opacity-90 font-mono text-sm uppercase tracking-wider shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all"
         >
-          <Plus className="w-5 h-5" />
+          <Plus className="w-4 h-4" />
           Create API Key
         </button>
       )}
 
       {/* Keys list */}
-      <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+      <div className="ui-panel overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50">
-                <th className="text-left px-6 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                  Name
-                </th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                  Key
-                </th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                  Usage
-                </th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                  Status
-                </th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                  Last Used
-                </th>
-                <th className="text-right px-6 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                  Actions
-                </th>
+              <tr className="border-b border-border bg-secondary/50">
+                <th className="text-left px-5 py-3 hud-label">Name</th>
+                <th className="text-left px-5 py-3 hud-label">Key</th>
+                <th className="text-left px-5 py-3 hud-label">Usage</th>
+                <th className="text-left px-5 py-3 hud-label">Status</th>
+                <th className="text-left px-5 py-3 hud-label">Last Used</th>
+                <th className="text-right px-5 py-3 hud-label">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
+            <tbody className="divide-y divide-border">
               {keys.length === 0 ? (
                 <tr>
                   <td
                     colSpan={6}
-                    className="px-6 py-8 text-center text-neutral-500 dark:text-neutral-500"
+                    className="px-6 py-8 text-center text-muted-foreground text-sm"
                   >
                     No API keys yet. Create one to get started.
                   </td>
                 </tr>
               ) : (
                 keys.map((key) => (
-                  <tr key={key.id}>
-                    <td className="px-6 py-4 text-sm font-medium text-neutral-900 dark:text-white">
+                  <tr key={key.id} className="hover:bg-secondary/40 transition-colors">
+                    <td className="px-5 py-4 text-sm font-medium text-foreground">
                       {key.name}
                     </td>
-                    <td className="px-6 py-4">
-                      <code className="text-sm text-neutral-600 dark:text-neutral-400 font-mono">
-                        {key.keyPrefix}...
+                    <td className="px-5 py-4">
+                      <code className="text-sm text-muted-foreground font-mono">
+                        {key.keyPrefix}…
                       </code>
                     </td>
-                    <td className="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
+                    <td className="px-5 py-4 text-sm text-muted-foreground font-mono">
                       {key.currentUsage.toLocaleString()}
                       {key.monthlyQuota && (
-                        <span className="text-neutral-400 dark:text-neutral-500">
-                          {' '}
-                          / {key.monthlyQuota.toLocaleString()}
+                        <span className="text-muted-foreground/50">
+                          {' '}/ {key.monthlyQuota.toLocaleString()}
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-4">
                       <span
-                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-mono ${
                           key.isActive
-                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                            : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
+                            ? 'bg-emerald-500/10 text-emerald-500'
+                            : 'bg-secondary text-muted-foreground'
                         }`}
                       >
-                        {key.isActive ? 'Active' : 'Disabled'}
+                        <span className={`hud-dot ${key.isActive ? 'live' : ''}`} />
+                        {key.isActive ? 'ACTIVE' : 'DISABLED'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
+                    <td className="px-5 py-4 text-sm text-muted-foreground font-mono">
                       {key.lastUsedAt
                         ? new Date(key.lastUsedAt).toLocaleDateString()
-                        : 'Never'}
+                        : 'never'}
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="px-5 py-4 text-right">
+                      <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => handleToggle(key.id, key.isActive)}
-                          className="p-2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                          className="p-2 text-muted-foreground hover:text-foreground transition-colors"
                           title={key.isActive ? 'Disable' : 'Enable'}
                         >
                           {key.isActive ? (
-                            <ToggleRight className="w-5 h-5 text-green-500" />
+                            <ToggleRight className="w-5 h-5 text-emerald-500" />
                           ) : (
                             <ToggleLeft className="w-5 h-5" />
                           )}
                         </button>
                         <button
                           onClick={() => handleDelete(key.id)}
-                          className="p-2 text-neutral-400 hover:text-red-600"
+                          className="p-2 text-muted-foreground hover:text-destructive transition-colors"
                           title="Delete"
                         >
-                          <Trash2 className="w-5 h-5" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>

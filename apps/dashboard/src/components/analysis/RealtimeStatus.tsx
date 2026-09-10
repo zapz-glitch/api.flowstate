@@ -16,7 +16,6 @@ import {
   Wifi,
   WifiOff,
   AlertCircle,
-  StopCircle,
   RefreshCw,
 } from 'lucide-react'
 
@@ -43,30 +42,30 @@ export function RealtimeStatus({
     switch (status) {
       case 'queued':
         return (
-          <Badge variant="secondary" className="gap-1">
+          <Badge variant="secondary" className="gap-1 font-mono">
             <Clock className="h-3 w-3" />
-            Queued
+            QUEUED
           </Badge>
         )
       case 'processing':
         return (
-          <Badge variant="default" className="gap-1 bg-primary">
+          <Badge variant="default" className="gap-1 bg-primary font-mono">
             <Loader2 className="h-3 w-3 animate-spin" />
-            Processing
+            PROCESSING
           </Badge>
         )
       case 'completed':
         return (
-          <Badge variant="default" className="gap-1 bg-emerald-500">
+          <Badge variant="default" className="gap-1 bg-emerald-500 font-mono">
             <CheckCircle2 className="h-3 w-3" />
-            Completed
+            COMPLETE
           </Badge>
         )
       case 'failed':
         return (
-          <Badge variant="destructive" className="gap-1">
+          <Badge variant="destructive" className="gap-1 font-mono">
             <XCircle className="h-3 w-3" />
-            Failed
+            FAILED
           </Badge>
         )
       default:
@@ -81,34 +80,34 @@ export function RealtimeStatus({
   const failedSteps = steps.filter((s) => s.status === 'failed').length
 
   return (
-    <Card className={cn('', className)}>
+    <Card className={cn('hud-frame overflow-hidden', className)}>
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <CardTitle className="text-base flex items-center gap-2">
             <Zap className="h-5 w-5 text-primary" />
-            Analysis Progress
+            Pipeline
           </CardTitle>
           <div className="flex items-center gap-2">
             {/* Connection status */}
             {usePolling ? (
-              <Badge variant="outline" className="gap-1 text-blue-600 border-blue-600">
+              <Badge variant="outline" className="gap-1 text-blue-500 border-blue-500/50 font-mono">
                 <RefreshCw className="h-3 w-3" />
-                Polling
+                POLL
               </Badge>
             ) : isConnecting ? (
-              <Badge variant="outline" className="gap-1">
+              <Badge variant="outline" className="gap-1 font-mono">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                Connecting
+                LINK…
               </Badge>
             ) : isConnected ? (
-              <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-600">
+              <Badge variant="outline" className="gap-1 text-emerald-500 border-emerald-500/50 font-mono">
                 <Wifi className="h-3 w-3" />
-                Live
+                LIVE
               </Badge>
             ) : (
-              <Badge variant="outline" className="gap-1 text-muted-foreground">
+              <Badge variant="outline" className="gap-1 text-muted-foreground font-mono">
                 <WifiOff className="h-3 w-3" />
-                Offline
+                OFFLINE
               </Badge>
             )}
             {/* Job status */}
@@ -125,25 +124,32 @@ export function RealtimeStatus({
           <StepIndicator steps={steps} currentStep={currentStep} />
         )}
 
-        {/* Step details */}
+        {/* Step grid */}
         <ProgressStepper steps={steps} currentStep={currentStep} />
+
+        {/* Live event feed */}
+        {messages.length > 0 && (
+          <div className="rounded-md border border-border bg-background/60 p-3 max-h-32 overflow-y-auto">
+            <MessageLog messages={messages} maxMessages={8} />
+          </div>
+        )}
 
         {/* Error display */}
         {error && (
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+          <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/30">
             <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-destructive">Analysis Failed</p>
-              <p className="text-xs text-destructive/80 mt-0.5">{error}</p>
+              <p className="text-xs text-destructive/80 mt-0.5 font-mono">{error}</p>
             </div>
           </div>
         )}
 
         {/* Actions (when processing) */}
         {status === 'processing' && (onCancel || onSwitchToPolling) && (
-          <div className="flex items-center gap-2 pt-2">
+          <div className="flex items-center gap-2 pt-1">
             {!isConnected && !usePolling && onSwitchToPolling && (
-              <Button variant="outline" size="sm" onClick={onSwitchToPolling}>
+              <Button variant="outline" size="sm" onClick={onSwitchToPolling} className="font-mono text-xs">
                 <RefreshCw className="h-3 w-3 mr-1" />
                 Switch to Polling
               </Button>
@@ -153,7 +159,7 @@ export function RealtimeStatus({
 
         {/* Summary stats (when completed) */}
         {status === 'completed' && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
             <StatCard
               label="Total Time"
               value={
@@ -163,26 +169,26 @@ export function RealtimeStatus({
                     : `${(totalDurationMs / 1000).toFixed(1)}s`
                   : '-'
               }
-              icon={<Clock className="h-4 w-4" />}
+              icon={<Clock className="h-3.5 w-3.5" />}
             />
             <StatCard
               label="Steps"
               value={`${completedSteps}/${steps.length}`}
               subtext={skippedSteps > 0 ? `${skippedSteps} skipped` : undefined}
-              icon={<CheckCircle2 className="h-4 w-4" />}
+              icon={<CheckCircle2 className="h-3.5 w-3.5" />}
             />
             <StatCard
               label="Cache Hits"
               value={cacheHits.toString()}
-              className={cacheHits > 0 ? 'text-blue-600' : ''}
-              icon={<Zap className="h-4 w-4" />}
+              className={cacheHits > 0 ? 'text-blue-500' : ''}
+              icon={<Zap className="h-3.5 w-3.5" />}
             />
             {failedSteps > 0 && (
               <StatCard
                 label="Failed"
                 value={failedSteps.toString()}
                 className="text-destructive"
-                icon={<XCircle className="h-4 w-4" />}
+                icon={<XCircle className="h-3.5 w-3.5" />}
               />
             )}
           </div>
@@ -204,12 +210,12 @@ interface StatCardProps {
 
 function StatCard({ label, value, subtext, icon, className }: StatCardProps) {
   return (
-    <div className={cn('p-3 rounded-lg bg-muted/50 border', className)}>
+    <div className={cn('p-3 rounded-md bg-secondary/50 border border-border', className)}>
       <div className="flex items-center gap-2 text-muted-foreground mb-1">
         {icon}
-        <span className="text-xs">{label}</span>
+        <span className="hud-label">{label}</span>
       </div>
-      <p className="text-lg font-semibold">{value}</p>
+      <p className="text-lg font-semibold hud-value">{value}</p>
       {subtext && <p className="text-xs text-muted-foreground">{subtext}</p>}
     </div>
   )
@@ -254,7 +260,7 @@ export function CompactStatus({ state, className }: CompactStatusProps) {
 
   if (status === 'completed') {
     return (
-      <div className={cn('flex items-center gap-2 text-emerald-600', className)}>
+      <div className={cn('flex items-center gap-2 text-emerald-500', className)}>
         <CheckCircle2 className="h-4 w-4" />
         <span className="text-sm font-medium">Analysis Complete</span>
       </div>
@@ -285,7 +291,7 @@ export function MessageLog({ messages, maxMessages = 10, className }: MessageLog
   const displayMessages = messages.slice(-maxMessages)
 
   return (
-    <div className={cn('space-y-1 font-mono text-xs', className)}>
+    <div className={cn('space-y-1 font-mono text-[11px]', className)}>
       {displayMessages.map((msg, i) => (
         <div key={i} className="flex items-start gap-2 text-muted-foreground">
           <span className="text-muted-foreground/50 flex-shrink-0">
@@ -293,10 +299,10 @@ export function MessageLog({ messages, maxMessages = 10, className }: MessageLog
           </span>
           <span
             className={cn(
-              msg.type === 'job_completed' && 'text-emerald-600',
+              msg.type === 'job_completed' && 'text-emerald-500',
               msg.type === 'job_failed' && 'text-destructive',
-              msg.type === 'cache_hit' && 'text-blue-600',
-              msg.type === 'step_failed' && 'text-amber-600'
+              msg.type === 'cache_hit' && 'text-blue-500',
+              msg.type === 'step_failed' && 'text-amber-500'
             )}
           >
             [{msg.type}] {JSON.stringify(msg.data)}

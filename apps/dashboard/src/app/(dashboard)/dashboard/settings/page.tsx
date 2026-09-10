@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signOut } from '@/lib/auth-client'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Settings2 } from 'lucide-react'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -20,35 +20,39 @@ export default function SettingsPage() {
   return (
     <div className="space-y-8 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+        <div className="hud-label mb-2 flex items-center gap-2">
+          <Settings2 className="w-3.5 h-3.5 text-primary" />
+          Config
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
           Settings
         </h1>
-        <p className="text-neutral-600 dark:text-neutral-400 mt-1">
+        <p className="text-muted-foreground mt-1 text-sm">
           Manage your account settings
         </p>
       </div>
 
       {/* Account section */}
-      <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-6">
-        <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
+      <div className="ui-panel p-6">
+        <h2 className="text-base font-semibold text-foreground mb-4">
           Account
         </h2>
 
         <div className="space-y-4">
           <button
             onClick={() => signOut().then(() => router.push('/'))}
-            className="px-4 py-2 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800"
+            className="px-4 py-2.5 text-sm text-muted-foreground border border-border rounded-md hover:bg-secondary hover:text-foreground transition-colors font-mono"
           >
-            Sign out
+            sign out
           </button>
         </div>
       </div>
 
       {/* Danger zone */}
-      <div className="bg-white dark:bg-neutral-900 rounded-xl border border-red-200 dark:border-red-900/50 p-6">
+      <div className="ui-panel border-destructive/30 p-6">
         <div className="flex items-center gap-3 mb-4">
-          <AlertTriangle className="w-5 h-5 text-red-500" />
-          <h2 className="text-lg font-semibold text-red-600 dark:text-red-400">
+          <AlertTriangle className="w-5 h-5 text-destructive" />
+          <h2 className="text-base font-semibold text-destructive">
             Danger Zone
           </h2>
         </div>
@@ -56,25 +60,25 @@ export default function SettingsPage() {
         {!showDeleteConfirm ? (
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30"
+            className="px-4 py-2.5 text-sm bg-destructive/10 text-destructive border border-destructive/30 rounded-md hover:bg-destructive/20 transition-colors font-mono"
           >
-            Delete Account
+            delete account
           </button>
         ) : (
           <div className="space-y-4">
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="text-sm text-muted-foreground">
               This action cannot be undone. All your API keys and usage data
               will be permanently deleted.
             </p>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+              <label className="hud-label block mb-1.5">
                 Type <strong>DELETE</strong> to confirm
               </label>
               <input
                 type="text"
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                className="w-full px-3 py-2.5 border border-border rounded-md bg-secondary/60 text-foreground font-mono text-sm focus:outline-none focus:ring-2 focus:ring-destructive/50 focus:border-destructive/50"
                 placeholder="DELETE"
               />
             </div>
@@ -82,7 +86,7 @@ export default function SettingsPage() {
               <button
                 onClick={handleDeleteAccount}
                 disabled={deleteConfirmText !== 'DELETE'}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2.5 bg-destructive text-destructive-foreground rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed font-mono text-sm uppercase tracking-wider"
               >
                 Delete Account
               </button>
@@ -91,7 +95,7 @@ export default function SettingsPage() {
                   setShowDeleteConfirm(false)
                   setDeleteConfirmText('')
                 }}
-                className="px-4 py-2 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+                className="px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground"
               >
                 Cancel
               </button>

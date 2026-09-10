@@ -175,17 +175,19 @@ export function Hero({ onGetStartedClick }: HeroProps) {
   }
 
   return (
-    <section className="relative pt-24 sm:pt-32 pb-12 sm:pb-16 overflow-hidden bg-background">
-      {/* Subtle gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-purple-950/10 to-transparent" />
-
+    <section className="relative pt-24 sm:pt-32 pb-12 sm:pb-16 overflow-hidden">
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 w-full">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
           {/* Left side - Text content */}
           <div className="space-y-6 sm:space-y-8 text-center lg:text-left">
-            {/* Main headline - italic serif style like agent.flowstate.homes */}
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-normal text-foreground leading-[1.1] mb-4 sm:mb-6">
-              <span className="italic">Analyze fast,</span>
+            <div className="hud-label inline-flex items-center gap-2 border border-border rounded-full px-3 py-1.5">
+              <span className="hud-dot live" />
+              property intelligence API
+            </div>
+
+            {/* Main headline */}
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-foreground leading-[1.08] tracking-tight mb-4 sm:mb-6">
+              <span className="hero-gradient-text">Analyze fast,</span>
               <br />
               <span>invest smarter</span>
             </h1>
@@ -195,10 +197,10 @@ export function Hero({ onGetStartedClick }: HeroProps) {
               Get instant property valuations, comparable sales, and investment analysis powered by AI.
             </p>
 
-            {/* Search input like agent site */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 p-2 sm:pl-5 bg-secondary/50 border border-border rounded-xl max-w-md mx-auto lg:mx-0">
+            {/* Address input */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 p-2 sm:pl-5 ui-panel max-w-md mx-auto lg:mx-0">
               <div className="flex items-center gap-3 flex-1 px-3 sm:px-0">
-                <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                <MapPin className="h-5 w-5 text-primary flex-shrink-0" />
                 <Input
                   type="text"
                   placeholder="Enter a property address..."
@@ -207,8 +209,7 @@ export function Hero({ onGetStartedClick }: HeroProps) {
               </div>
               <Button
                 onClick={onGetStartedClick}
-                variant="secondary"
-                className="bg-secondary hover:bg-secondary/80 text-foreground w-full sm:w-auto"
+                className="w-full sm:w-auto font-mono uppercase tracking-wider shadow-[0_0_20px_hsl(var(--primary)/0.35)]"
               >
                 Analyze
                 <ArrowRight className="h-4 w-4" />
@@ -218,9 +219,9 @@ export function Hero({ onGetStartedClick }: HeroProps) {
 
           {/* Right side - Terminal API demo */}
           <div className="w-full">
-            <div className="rounded-xl overflow-hidden border border-border bg-card shadow-2xl">
+            <div className="rounded-md overflow-hidden ui-panel hud-frame shadow-2xl">
               {/* Terminal header */}
-              <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 bg-secondary border-b border-border">
+              <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 bg-secondary/60 border-b border-border">
                 <div className="flex items-center gap-2">
                   <div className="flex gap-1.5">
                     <div className="w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full bg-red-500/80 transition-all hover:bg-red-500" />
@@ -229,29 +230,29 @@ export function Hero({ onGetStartedClick }: HeroProps) {
                   </div>
                   <div className="flex items-center gap-2 ml-2 sm:ml-3 text-muted-foreground text-xs sm:text-sm">
                     <Terminal className="h-3.5 sm:h-4 w-3.5 sm:w-4" />
-                    <span className="hidden sm:inline">Terminal</span>
+                    <span className="hidden sm:inline font-mono">api.flowstate.homes</span>
                   </div>
                 </div>
                 <button
                   onClick={handleCopy}
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-secondary"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-secondary font-mono"
                 >
                   {copied ? (
                     <>
-                      <Check className="h-3.5 w-3.5 text-green-500 dark:text-green-400" />
-                      <span className="text-green-500 dark:text-green-400 hidden sm:inline">Copied</span>
+                      <Check className="h-3.5 w-3.5 text-emerald-500" />
+                      <span className="text-emerald-500 hidden sm:inline">copied</span>
                     </>
                   ) : (
                     <>
                       <Copy className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">Copy</span>
+                      <span className="hidden sm:inline">copy</span>
                     </>
                   )}
                 </button>
               </div>
 
               {/* Terminal content */}
-              <div className="p-3 sm:p-4 font-mono text-xs sm:text-sm min-h-[200px] sm:min-h-[300px] max-h-[250px] sm:max-h-[300px] overflow-hidden">
+              <div className="p-3 sm:p-4 font-mono text-xs sm:text-sm min-h-[200px] sm:min-h-[300px] max-h-[250px] sm:max-h-[300px] overflow-hidden bg-background/70">
                 {/* Previous lines */}
                 <div className="space-y-1">
                   {lines.map((line, index) => (
@@ -261,13 +262,13 @@ export function Hero({ onGetStartedClick }: HeroProps) {
                     >
                       {line.type === 'command' && (
                         <div className="flex items-start gap-2">
-                          <span className="text-green-500 dark:text-green-400 select-none">$</span>
+                          <span className="text-primary select-none">❯</span>
                           <span className="text-foreground/80 break-all">{line.content}</span>
                         </div>
                       )}
                       {line.type === 'output' && (
                         <div className="ml-4 text-xs">
-                          <span className="text-purple-500 dark:text-purple-400">
+                          <span className="text-primary">
                             {line.content.replace(/"([^"]+)":/g, (_, key) => `"${key}":`).split(':')[0]}
                           </span>
                           <span className="text-muted-foreground">
@@ -281,15 +282,15 @@ export function Hero({ onGetStartedClick }: HeroProps) {
                       {line.type === 'loading' && (
                         <div className="flex items-center gap-2 ml-4 text-muted-foreground">
                           <div className="flex gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-purple-500 dark:bg-purple-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                            <span className="w-1.5 h-1.5 rounded-full bg-purple-500 dark:bg-purple-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                            <span className="w-1.5 h-1.5 rounded-full bg-purple-500 dark:bg-purple-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
                           </div>
                           <span className="text-xs">{line.content}</span>
                         </div>
                       )}
                       {line.type === 'success' && (
-                        <div className="flex items-center gap-2 ml-4 text-green-500 dark:text-green-400 text-xs mt-2">
+                        <div className="flex items-center gap-2 ml-4 text-emerald-500 text-xs mt-2">
                           <Check className="h-3.5 w-3.5" />
                           <span>{line.content}</span>
                         </div>
@@ -301,11 +302,11 @@ export function Hero({ onGetStartedClick }: HeroProps) {
                 {/* Current typing line */}
                 {isTyping && (
                   <div className="flex items-start gap-2 mt-1">
-                    <span className="text-green-500 dark:text-green-400 select-none">$</span>
+                    <span className="text-primary select-none">❯</span>
                     <span className="text-foreground/80 break-all">
                       {currentText}
                       <span
-                        className={`inline-block w-2 h-4 bg-foreground/70 ml-0.5 align-middle transition-opacity duration-100 ${
+                        className={`inline-block w-2 h-4 bg-primary ml-0.5 align-middle transition-opacity duration-100 ${
                           showCursor ? 'opacity-100' : 'opacity-0'
                         }`}
                       />
@@ -316,9 +317,9 @@ export function Hero({ onGetStartedClick }: HeroProps) {
                 {/* Waiting cursor when not typing */}
                 {!isTyping && lines.length === 0 && (
                   <div className="flex items-start gap-2">
-                    <span className="text-green-500 dark:text-green-400 select-none">$</span>
+                    <span className="text-primary select-none">❯</span>
                     <span
-                      className={`inline-block w-2 h-4 bg-foreground/70 transition-opacity duration-100 ${
+                      className={`inline-block w-2 h-4 bg-primary transition-opacity duration-100 ${
                         showCursor ? 'opacity-100' : 'opacity-0'
                       }`}
                     />

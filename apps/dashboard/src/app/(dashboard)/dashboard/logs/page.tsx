@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { getUsageLogs } from '@/lib/api'
-import { FileText, ChevronLeft, ChevronRight } from 'lucide-react'
+import { FileText, ChevronLeft, ChevronRight, ScrollText } from 'lucide-react'
 
 const LOGS_PER_PAGE = 50
 
@@ -37,73 +37,63 @@ export default async function LogsPage({
   const data = await getLogsData(params)
 
   if (!data) {
-    return <div>Loading...</div>
+    return <div className="hud-label p-6">Loading…</div>
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">API Logs</h1>
-          <p className="text-muted-foreground mt-1">
+          <div className="hud-label mb-2 flex items-center gap-2">
+            <ScrollText className="w-3.5 h-3.5 text-primary" />
+            Request History
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">API Logs</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
             Browse and inspect your API request history
           </p>
         </div>
-        <p className="text-sm text-muted-foreground">
-          {data.pagination.totalLogs.toLocaleString()} total logs
+        <p className="hud-label">
+          {data.pagination.totalLogs.toLocaleString()} total
         </p>
       </div>
 
       {/* Logs table */}
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
+      <div className="ui-panel overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border bg-secondary/50">
-                <th className="text-left px-6 py-3 text-sm font-medium text-muted-foreground">
-                  Time
-                </th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-muted-foreground">
-                  Method
-                </th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-muted-foreground">
-                  Endpoint
-                </th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-muted-foreground">
-                  Status
-                </th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-muted-foreground">
-                  Response Time
-                </th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-muted-foreground">
-                  Address
-                </th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-muted-foreground">
-                  Details
-                </th>
+                <th className="text-left px-5 py-3 hud-label">Time</th>
+                <th className="text-left px-5 py-3 hud-label">Method</th>
+                <th className="text-left px-5 py-3 hud-label">Endpoint</th>
+                <th className="text-left px-5 py-3 hud-label">Status</th>
+                <th className="text-left px-5 py-3 hud-label">Latency</th>
+                <th className="text-left px-5 py-3 hud-label">Address</th>
+                <th className="text-left px-5 py-3 hud-label"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {data.logs.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
-                    <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p>No logs found</p>
-                    <p className="text-sm mt-1">Make some API requests to see them here</p>
+                    <FileText className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                    <p className="text-sm">No logs found</p>
+                    <p className="text-xs mt-1 font-mono">make some API requests to see them here</p>
                   </td>
                 </tr>
               ) : (
                 data.logs.map((log) => (
                   <tr
                     key={log.id}
-                    className="hover:bg-secondary/50 transition-colors"
+                    className="hover:bg-secondary/40 transition-colors group"
                   >
-                    <td className="px-6 py-4 text-sm text-muted-foreground whitespace-nowrap">
+                    <td className="px-5 py-3.5 text-sm text-muted-foreground font-mono whitespace-nowrap">
                       {new Date(log.createdAt).toLocaleString()}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3.5">
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-mono ${
                           log.method === 'GET'
                             ? 'bg-emerald-500/10 text-emerald-500'
                             : log.method === 'POST'
@@ -118,14 +108,14 @@ export default async function LogsPage({
                         {log.method}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3.5">
                       <code className="text-sm text-muted-foreground font-mono">
                         {log.endpoint}
                       </code>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3.5">
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-mono ${
                           log.statusCode >= 200 && log.statusCode < 300
                             ? 'bg-emerald-500/10 text-emerald-500'
                             : log.statusCode >= 400
@@ -136,18 +126,18 @@ export default async function LogsPage({
                         {log.statusCode}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-muted-foreground">
-                      {log.responseTimeMs ? `${log.responseTimeMs}ms` : '-'}
+                    <td className="px-5 py-3.5 text-sm text-muted-foreground font-mono">
+                      {log.responseTimeMs ? `${log.responseTimeMs}ms` : '—'}
                     </td>
-                    <td className="px-6 py-4 text-sm text-muted-foreground max-w-[200px] truncate">
-                      {log.propertyAddress || '-'}
+                    <td className="px-5 py-3.5 text-sm text-muted-foreground max-w-[200px] truncate">
+                      {log.propertyAddress || '—'}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3.5">
                       <Link
                         href={`/dashboard/logs/${log.id}`}
-                        className="text-sm text-purple-500 hover:text-purple-400"
+                        className="text-sm text-primary hover:opacity-80 font-mono opacity-60 group-hover:opacity-100 transition-opacity"
                       >
-                        View
+                        inspect →
                       </Link>
                     </td>
                   </tr>
@@ -159,36 +149,36 @@ export default async function LogsPage({
 
         {/* Pagination */}
         {data.pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-border">
-            <p className="text-sm text-muted-foreground">
-              Page {data.pagination.page} of {data.pagination.totalPages}
+          <div className="flex items-center justify-between px-5 py-4 border-t border-border">
+            <p className="hud-label">
+              page {data.pagination.page} / {data.pagination.totalPages}
             </p>
             <div className="flex items-center gap-2">
               {data.pagination.hasPrev ? (
                 <Link
                   href={`/dashboard/logs?page=${data.pagination.page - 1}`}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:bg-secondary rounded-lg transition-colors"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors font-mono"
                 >
                   <ChevronLeft className="w-4 h-4" />
-                  Previous
+                  prev
                 </Link>
               ) : (
-                <span className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground/50 cursor-not-allowed">
+                <span className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground/50 cursor-not-allowed font-mono">
                   <ChevronLeft className="w-4 h-4" />
-                  Previous
+                  prev
                 </span>
               )}
               {data.pagination.hasNext ? (
                 <Link
                   href={`/dashboard/logs?page=${data.pagination.page + 1}`}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:bg-secondary rounded-lg transition-colors"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors font-mono"
                 >
-                  Next
+                  next
                   <ChevronRight className="w-4 h-4" />
                 </Link>
               ) : (
-                <span className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground/50 cursor-not-allowed">
-                  Next
+                <span className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground/50 cursor-not-allowed font-mono">
+                  next
                   <ChevronRight className="w-4 h-4" />
                 </span>
               )}

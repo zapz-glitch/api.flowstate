@@ -134,7 +134,7 @@ function SignInModal({ isOpen, onClose, onForgotPassword, onSwitchToSignUp }: Si
       <div className="relative w-full max-w-md mx-4 animate-in fade-in zoom-in-95 duration-200">
         <div className="relative rounded-3xl shadow-2xl overflow-hidden bg-card">
           {/* Background gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-violet-500/5" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
           <div className="absolute inset-0 rounded-3xl border border-border" />
 
           {/* Content */}
@@ -185,7 +185,7 @@ function SignInModal({ isOpen, onClose, onForgotPassword, onSwitchToSignUp }: Si
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full px-4 py-2.5 bg-secondary border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-colors"
+                    className="w-full px-4 py-2.5 bg-secondary border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-colors"
                     placeholder="you@example.com"
                   />
                 </div>
@@ -202,7 +202,7 @@ function SignInModal({ isOpen, onClose, onForgotPassword, onSwitchToSignUp }: Si
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={8}
-                    className="w-full px-4 py-2.5 bg-secondary border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-colors"
+                    className="w-full px-4 py-2.5 bg-secondary border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-colors"
                     placeholder="••••••••"
                   />
                 </div>
@@ -213,7 +213,7 @@ function SignInModal({ isOpen, onClose, onForgotPassword, onSwitchToSignUp }: Si
                     <button
                       type="button"
                       onClick={onForgotPassword}
-                      className="text-sm text-purple-600 dark:text-purple-400 hover:underline"
+                      className="text-sm text-primary hover:underline"
                     >
                       Forgot password?
                     </button>
@@ -224,7 +224,7 @@ function SignInModal({ isOpen, onClose, onForgotPassword, onSwitchToSignUp }: Si
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-2.5 px-4 bg-gradient-to-r from-purple-500 to-violet-600 text-white font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 shadow-lg shadow-purple-500/25"
+                  className="w-full py-2.5 px-4 bg-gradient-to-r from-primary to-accent text-white font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 shadow-lg shadow-[0_8px_30px_hsl(var(--primary)/0.3)]"
                 >
                   {isLoading ? (
                     <>
@@ -244,7 +244,7 @@ function SignInModal({ isOpen, onClose, onForgotPassword, onSwitchToSignUp }: Si
                   <button
                     type="button"
                     onClick={onSwitchToSignUp}
-                    className="text-purple-600 dark:text-purple-400 hover:underline font-medium"
+                    className="text-primary hover:underline font-medium"
                   >
                     Sign up
                   </button>
@@ -354,7 +354,7 @@ function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalProps) {
       <div className="relative w-full max-w-md mx-4 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
         <div className="relative rounded-3xl shadow-2xl overflow-hidden bg-card">
           {/* Background gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-violet-500/5" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
           <div className="absolute inset-0 rounded-3xl border border-border" />
 
           {/* Content */}
@@ -407,7 +407,7 @@ function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalProps) {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required
-                      className="w-full px-3 py-2 bg-secondary border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-colors text-sm"
+                      className="w-full px-3 py-2 bg-secondary border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-colors text-sm"
                       placeholder="John Doe"
                     />
                   </div>
@@ -423,7 +423,7 @@ function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalProps) {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="w-full px-3 py-2 bg-secondary border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-colors text-sm"
+                      className="w-full px-3 py-2 bg-secondary border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-colors text-sm"
                       placeholder="you@example.com"
                     />
                   </div>
@@ -443,7 +443,7 @@ function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalProps) {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       minLength={8}
-                      className="w-full px-3 py-2 bg-secondary border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-colors text-sm"
+                      className="w-full px-3 py-2 bg-secondary border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-colors text-sm"
                       placeholder="••••••••"
                     />
                   </div>
@@ -460,7 +460,7 @@ function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalProps) {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
                       minLength={8}
-                      className="w-full px-3 py-2 bg-secondary border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-colors text-sm"
+                      className="w-full px-3 py-2 bg-secondary border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-colors text-sm"
                       placeholder="••••••••"
                     />
                   </div>
@@ -472,7 +472,7 @@ function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalProps) {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-2.5 px-4 bg-gradient-to-r from-purple-500 to-violet-600 text-white font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 shadow-lg shadow-purple-500/25"
+                  className="w-full py-2.5 px-4 bg-gradient-to-r from-primary to-accent text-white font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 shadow-lg shadow-[0_8px_30px_hsl(var(--primary)/0.3)]"
                 >
                   {isLoading ? (
                     <>
@@ -488,9 +488,9 @@ function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalProps) {
               {/* Terms note */}
               <p className="text-xs text-muted-foreground text-center mt-3">
                 By creating an account, you agree to our{' '}
-                <a href="/terms" className="text-purple-600 dark:text-purple-400 hover:underline">Terms of Service</a>
+                <a href="/terms" className="text-primary hover:underline">Terms of Service</a>
                 {' '}and{' '}
-                <a href="/privacy" className="text-purple-600 dark:text-purple-400 hover:underline">Privacy Policy</a>
+                <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
               </p>
 
               {/* Switch to sign in */}
@@ -500,7 +500,7 @@ function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalProps) {
                   <button
                     type="button"
                     onClick={onSwitchToSignIn}
-                    className="text-purple-600 dark:text-purple-400 hover:underline font-medium"
+                    className="text-primary hover:underline font-medium"
                   >
                     Sign in
                   </button>
@@ -589,7 +589,7 @@ function ForgotPasswordModal({ isOpen, onClose, onBackToSignIn }: ForgotPassword
       <div className="relative w-full max-w-md mx-4 animate-in fade-in zoom-in-95 duration-200">
         <div className="relative rounded-3xl shadow-2xl overflow-hidden bg-card">
           {/* Background gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-violet-500/5" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
           <div className="absolute inset-0 rounded-3xl border border-border" />
 
           {/* Content */}
@@ -637,7 +637,7 @@ function ForgotPasswordModal({ isOpen, onClose, onBackToSignIn }: ForgotPassword
                   <button
                     type="button"
                     onClick={onBackToSignIn}
-                    className="inline-flex items-center gap-2 text-purple-600 dark:text-purple-400 hover:underline font-medium"
+                    className="inline-flex items-center gap-2 text-primary hover:underline font-medium"
                   >
                     <ArrowLeft className="w-4 h-4" />
                     Back to sign in
@@ -664,7 +664,7 @@ function ForgotPasswordModal({ isOpen, onClose, onBackToSignIn }: ForgotPassword
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        className="w-full px-4 py-2.5 bg-secondary border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-colors"
+                        className="w-full px-4 py-2.5 bg-secondary border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-colors"
                         placeholder="you@example.com"
                       />
                     </div>
@@ -673,7 +673,7 @@ function ForgotPasswordModal({ isOpen, onClose, onBackToSignIn }: ForgotPassword
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className="w-full py-2.5 px-4 bg-gradient-to-r from-purple-500 to-violet-600 text-white font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 shadow-lg shadow-purple-500/25"
+                      className="w-full py-2.5 px-4 bg-gradient-to-r from-primary to-accent text-white font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 shadow-lg shadow-[0_8px_30px_hsl(var(--primary)/0.3)]"
                     >
                       {isLoading ? (
                         <>
@@ -692,7 +692,7 @@ function ForgotPasswordModal({ isOpen, onClose, onBackToSignIn }: ForgotPassword
                       <button
                         type="button"
                         onClick={onBackToSignIn}
-                        className="inline-flex items-center gap-1 text-purple-600 dark:text-purple-400 hover:underline font-medium"
+                        className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
                       >
                         <ArrowLeft className="w-4 h-4" />
                         Back to sign in

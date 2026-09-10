@@ -47,12 +47,12 @@ export function JsonViewer({
   }
 
   return (
-    <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+    <div className="ui-panel overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
+      <div className="flex items-center justify-between px-4 py-3 bg-secondary/50 border-b border-border">
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="flex items-center gap-2 text-sm font-medium text-neutral-900 dark:text-white hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+          className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-muted-foreground transition-colors"
         >
           {collapsed ? (
             <ChevronRight className="w-4 h-4" />
@@ -64,18 +64,18 @@ export function JsonViewer({
         {data && (
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 px-2 py-1 text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded transition-colors"
+            className="flex items-center gap-1.5 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary rounded transition-colors font-mono"
             title="Copy to clipboard"
           >
             {copied ? (
               <>
-                <Check className="w-3.5 h-3.5 text-green-500" />
-                Copied
+                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                copied
               </>
             ) : (
               <>
                 <Copy className="w-3.5 h-3.5" />
-                Copy
+                copy
               </>
             )}
           </button>
@@ -85,15 +85,15 @@ export function JsonViewer({
       {/* Content */}
       {!collapsed && (
         <div
-          className="overflow-auto bg-neutral-50 dark:bg-neutral-950"
+          className="overflow-auto bg-background/60"
           style={{ maxHeight }}
         >
           {!data ? (
-            <div className="p-4 text-sm text-neutral-500 italic">
+            <div className="p-4 text-sm text-muted-foreground italic">
               No data available
             </div>
           ) : (
-            <pre className="p-4 text-sm font-mono text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap break-words">
+            <pre className="p-4 text-sm font-mono text-foreground/90 whitespace-pre-wrap break-words">
               {isValidJson ? (
                 <JsonSyntaxHighlight json={formattedContent} />
               ) : (
@@ -135,7 +135,7 @@ function highlightLine(line: string): React.ReactNode {
     if (keyMatch) {
       tokens.push(<span key={key++}>{keyMatch[1]}</span>)
       tokens.push(
-        <span key={key++} className="text-purple-600 dark:text-purple-400">
+        <span key={key++} className="text-primary">
           {keyMatch[2]}
         </span>
       )

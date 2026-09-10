@@ -26,78 +26,71 @@ export default async function LogDetailPage({
 
   const statusColor =
     log.statusCode >= 200 && log.statusCode < 300
-      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+      ? 'bg-emerald-500/10 text-emerald-500'
       : log.statusCode >= 400
-        ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-        : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+        ? 'bg-red-500/10 text-red-500'
+        : 'bg-amber-500/10 text-amber-500'
 
   const methodColor =
     log.method === 'GET'
-      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+      ? 'bg-emerald-500/10 text-emerald-500'
       : log.method === 'POST'
-        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+        ? 'bg-blue-500/10 text-blue-500'
         : log.method === 'PUT'
-          ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+          ? 'bg-amber-500/10 text-amber-500'
           : log.method === 'DELETE'
-            ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-            : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-400'
+            ? 'bg-red-500/10 text-red-500'
+            : 'bg-secondary text-muted-foreground'
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link
           href="/dashboard/logs"
-          className="flex items-center gap-1 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors font-mono"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to logs
+          back to logs
         </Link>
       </div>
 
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Request Details</h1>
-        <p className="text-neutral-600 dark:text-neutral-400 mt-1">
+        <div className="hud-label mb-2">Request Inspection</div>
+        <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">Request Details</h1>
+        <p className="text-muted-foreground mt-1 text-sm font-mono">
           {new Date(log.createdAt).toLocaleString()}
         </p>
       </div>
 
       {/* Summary card */}
-      <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-6">
+      <div className="ui-panel p-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           <div>
-            <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-1">
-              Method
-            </p>
+            <p className="hud-label mb-1.5">Method</p>
             <span
-              className={`inline-flex items-center px-2.5 py-1 rounded text-sm font-medium ${methodColor}`}
+              className={`inline-flex items-center px-2.5 py-1 rounded text-sm font-mono ${methodColor}`}
             >
               {log.method}
             </span>
           </div>
           <div>
-            <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-1">
-              Status
-            </p>
+            <p className="hud-label mb-1.5">Status</p>
             <span
-              className={`inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium ${statusColor}`}
+              className={`inline-flex items-center px-2.5 py-1 rounded text-sm font-mono ${statusColor}`}
             >
               {log.statusCode}
             </span>
           </div>
           <div>
-            <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-1">
-              Response Time
-            </p>
-            <p className="text-lg font-semibold text-neutral-900 dark:text-white">
-              {log.responseTimeMs ? `${log.responseTimeMs}ms` : '-'}
+            <p className="hud-label mb-1.5">Latency</p>
+            <p className="hud-value text-lg font-semibold text-foreground">
+              {log.responseTimeMs ? `${log.responseTimeMs}ms` : '—'}
             </p>
           </div>
           <div>
-            <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-1">
-              Endpoint
-            </p>
-            <code className="text-sm text-neutral-700 dark:text-neutral-300 font-mono">
+            <p className="hud-label mb-1.5">Endpoint</p>
+            <code className="text-sm text-foreground/80 font-mono">
               {log.endpoint}
             </code>
           </div>
@@ -105,43 +98,43 @@ export default async function LogDetailPage({
       </div>
 
       {/* Metadata */}
-      <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-6">
-        <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
+      <div className="ui-panel p-6">
+        <h2 className="text-base font-semibold text-foreground mb-4">
           Request Metadata
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex items-start gap-3">
-            <Key className="w-5 h-5 text-neutral-400 mt-0.5" />
+            <Key className="w-5 h-5 text-muted-foreground mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-neutral-900 dark:text-white">API Key ID</p>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 font-mono">
+              <p className="text-sm font-medium text-foreground">API Key ID</p>
+              <p className="text-sm text-muted-foreground font-mono">
                 {log.apiKeyId}
               </p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <Clock className="w-5 h-5 text-neutral-400 mt-0.5" />
+            <Clock className="w-5 h-5 text-muted-foreground mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-neutral-900 dark:text-white">Timestamp</p>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              <p className="text-sm font-medium text-foreground">Timestamp</p>
+              <p className="text-sm text-muted-foreground font-mono">
                 {new Date(log.createdAt).toISOString()}
               </p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <Globe className="w-5 h-5 text-neutral-400 mt-0.5" />
+            <Globe className="w-5 h-5 text-muted-foreground mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-neutral-900 dark:text-white">IP Address</p>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              <p className="text-sm font-medium text-foreground">IP Address</p>
+              <p className="text-sm text-muted-foreground font-mono">
                 {log.ipAddress || 'Unknown'}
               </p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <Monitor className="w-5 h-5 text-neutral-400 mt-0.5" />
+            <Monitor className="w-5 h-5 text-muted-foreground mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-neutral-900 dark:text-white">User Agent</p>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 break-all">
+              <p className="text-sm font-medium text-foreground">User Agent</p>
+              <p className="text-sm text-muted-foreground break-all">
                 {log.userAgent || 'Unknown'}
               </p>
             </div>
@@ -150,9 +143,9 @@ export default async function LogDetailPage({
 
         {/* Property info if available */}
         {log.propertyAddress && (
-          <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-            <p className="text-sm font-medium text-neutral-900 dark:text-white mb-1">Property</p>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          <div className="mt-4 pt-4 border-t border-border">
+            <p className="hud-label mb-1">Property</p>
+            <p className="text-sm text-muted-foreground">
               {log.propertyAddress}
               {log.propertyCity && `, ${log.propertyCity}`}
               {log.propertyState && `, ${log.propertyState}`}
@@ -162,9 +155,9 @@ export default async function LogDetailPage({
 
         {/* Error message if available */}
         {log.errorMessage && (
-          <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-            <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-1">Error Message</p>
-            <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+          <div className="mt-4 pt-4 border-t border-border">
+            <p className="hud-label text-destructive mb-1">Error Message</p>
+            <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-md font-mono">
               {log.errorMessage}
             </p>
           </div>

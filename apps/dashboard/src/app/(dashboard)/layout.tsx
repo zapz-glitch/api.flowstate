@@ -15,7 +15,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         className={cn(
           'transition-all duration-300 ease-in-out',
           // Desktop: dynamic padding based on sidebar state
-          collapsed ? 'lg:pl-[72px]' : 'lg:pl-64',
+          collapsed ? 'lg:pl-[76px]' : 'lg:pl-60',
           // Mobile: padding for top header and bottom nav
           'pt-16 pb-16 lg:pt-0 lg:pb-0'
         )}

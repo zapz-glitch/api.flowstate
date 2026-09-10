@@ -79,13 +79,13 @@ export function Pricing({ onSignUpClick }: PricingProps) {
               key={plan.name}
               className={`relative rounded-2xl p-8 flex flex-col ${
                 plan.popular
-                  ? 'bg-gradient-to-br from-purple-500/20 via-card to-violet-500/20 border border-purple-500/30'
+                  ? 'bg-gradient-to-br from-primary/15 via-card to-accent/15 border border-primary/30'
                   : 'bg-card border border-border'
               }`}
             >
               {plan.popular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="bg-gradient-to-r from-purple-500 to-violet-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                  <span className="bg-gradient-to-r from-primary to-accent text-white text-xs font-semibold px-3 py-1 rounded-full">
                     Most Popular
                   </span>
                 </div>
@@ -107,7 +107,7 @@ export function Pricing({ onSignUpClick }: PricingProps) {
               <ul className="space-y-3 flex-grow">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-3 text-sm text-card-foreground">
-                    <Check className="h-4 w-4 text-purple-400 flex-shrink-0 mt-0.5" />
+                    <Check className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                     <span>{feature}</span>
                   </li>
                 ))}

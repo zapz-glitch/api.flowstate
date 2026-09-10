@@ -33,11 +33,11 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 const navigation = [
-  { name: 'Overview', href: '/dashboard', icon: Home },
-  { name: 'API Playground', href: '/dashboard/analyze', icon: Search },
-  { name: 'API Keys', href: '/dashboard/api-keys', icon: Key },
-  { name: 'Usage', href: '/dashboard/usage', icon: BarChart3 },
-  { name: 'API Logs', href: '/dashboard/logs', icon: FileText },
+  { name: 'Overview', href: '/dashboard', icon: Home, code: '01' },
+  { name: 'API Playground', href: '/dashboard/analyze', icon: Search, code: '02' },
+  { name: 'API Keys', href: '/dashboard/api-keys', icon: Key, code: '03' },
+  { name: 'Usage', href: '/dashboard/usage', icon: BarChart3, code: '04' },
+  { name: 'API Logs', href: '/dashboard/logs', icon: FileText, code: '05' },
 ]
 
 export default function Sidebar() {
@@ -64,20 +64,20 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Sidebar */}
+      {/* ── Desktop rail ─────────────────────────────────────────────────── */}
       <div
         className={cn(
-          'fixed inset-y-0 left-0 z-40 hidden lg:flex lg:flex-col bg-card border-r border-border transition-all duration-300 ease-in-out',
-          collapsed ? 'w-[72px]' : 'w-64'
+          'fixed inset-y-0 left-0 z-40 hidden lg:flex lg:flex-col bg-card/80 backdrop-blur-md border-r border-border transition-all duration-300 ease-in-out',
+          collapsed ? 'w-[76px]' : 'w-60'
         )}
       >
         <div className="flex flex-col h-full">
-          {/* Logo & Collapse Button */}
+          {/* Logo & Collapse */}
           <div className="flex items-center justify-between h-16 px-4 border-b border-border">
             <Link href="/dashboard" className="flex items-center">
               {collapsed ? (
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">F</span>
+                <div className="w-9 h-9 rounded-md bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-[0_0_16px_hsl(var(--primary)/0.4)]">
+                  <span className="text-primary-foreground font-bold text-sm font-mono">F</span>
                 </div>
               ) : (
                 <Logo size="sm" />
@@ -86,7 +86,7 @@ export default function Sidebar() {
             <button
               onClick={toggleCollapsed}
               className={cn(
-                'p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors',
+                'p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors',
                 collapsed && 'absolute -right-3 top-6 bg-card border border-border shadow-sm'
               )}
               aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -99,8 +99,11 @@ export default function Sidebar() {
             </button>
           </div>
 
-          {/* Navigation */}
+          {/* Nav */}
           <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+            {!collapsed && (
+              <div className="hud-label px-3 pb-2 pt-1">Modules</div>
+            )}
             {navigation.map((item) => {
               const isActive = pathname === item.href
               return (
@@ -108,35 +111,65 @@ export default function Sidebar() {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200',
-                    collapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2.5',
+                    'group relative flex items-center gap-3 rounded-md text-sm font-medium transition-all duration-200',
+                    collapsed ? 'justify-center px-2 py-3' : 'px-3 py-2.5',
                     isActive
-                      ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
+                      ? 'bg-primary/10 text-foreground'
                       : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
                   )}
                   title={collapsed ? item.name : undefined}
                 >
-                  <item.icon
-                    className={cn('w-5 h-5 flex-shrink-0', isActive && 'text-purple-500')}
+                  {/* Active edge */}
+                  <span
+                    className={cn(
+                      'absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-full bg-primary transition-all duration-200',
+                      isActive ? 'opacity-100 shadow-[0_0_8px_hsl(var(--primary)/0.8)]' : 'opacity-0'
+                    )}
                   />
-                  {!collapsed && <span>{item.name}</span>}
+                  <item.icon
+                    className={cn('w-5 h-5 flex-shrink-0 transition-colors', isActive && 'text-primary')}
+                  />
+                  {!collapsed && (
+                    <>
+                      <span className="flex-1">{item.name}</span>
+                      <span
+                        className={cn(
+                          'hud-label transition-opacity',
+                          isActive ? 'text-primary opacity-100' : 'opacity-0 group-hover:opacity-50'
+                        )}
+                      >
+                        {item.code}
+                      </span>
+                    </>
+                  )}
                 </Link>
               )
             })}
           </nav>
 
-          {/* User Section with Dropdown */}
+          {/* Status strip */}
+          {!collapsed && (
+            <div className="px-4 py-3 border-t border-border">
+              <div className="flex items-center gap-2">
+                <span className="hud-dot live" />
+                <span className="hud-label">API Online</span>
+                <span className="hud-label ml-auto opacity-60">v5</span>
+              </div>
+            </div>
+          )}
+
+          {/* User */}
           <div className="p-3 border-t border-border">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   className={cn(
-                    'flex items-center gap-3 w-full rounded-lg p-2 text-left transition-colors hover:bg-secondary',
+                    'flex items-center gap-3 w-full rounded-md p-2 text-left transition-colors hover:bg-secondary',
                     collapsed && 'justify-center'
                   )}
                 >
                   <Avatar className="h-9 w-9 flex-shrink-0">
-                    <AvatarFallback className="bg-gradient-to-br from-purple-500 to-violet-600 text-white text-sm font-medium">
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-sm font-medium">
                       {initials}
                     </AvatarFallback>
                   </Avatar>
@@ -187,7 +220,7 @@ export default function Sidebar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleSignOut}
-                  className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
+                  className="text-destructive focus:text-destructive focus:bg-destructive/10"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out
@@ -198,8 +231,8 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-16 bg-card border-b border-border flex items-center justify-between px-4">
+      {/* ── Mobile header ────────────────────────────────────────────────── */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-16 bg-card/80 backdrop-blur-md border-b border-border flex items-center justify-between px-4">
         <Link href="/dashboard">
           <Logo size="sm" />
         </Link>
@@ -207,7 +240,7 @@ export default function Sidebar() {
           <DropdownMenuTrigger asChild>
             <button className="p-1">
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-gradient-to-br from-purple-500 to-violet-600 text-white text-xs font-medium">
+                <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-xs font-medium">
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -246,7 +279,7 @@ export default function Sidebar() {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={handleSignOut}
-              className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
+              className="text-destructive focus:text-destructive focus:bg-destructive/10"
             >
               <LogOut className="mr-2 h-4 w-4" />
               Sign Out
@@ -255,8 +288,8 @@ export default function Sidebar() {
         </DropdownMenu>
       </div>
 
-      {/* Mobile Navigation Bottom Bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-card border-t border-border">
+      {/* ── Mobile bottom bar ────────────────────────────────────────────── */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-card/80 backdrop-blur-md border-t border-border">
         <nav className="flex items-center justify-around h-full px-2">
           {navigation.slice(0, 5).map((item) => {
             const isActive = pathname === item.href
@@ -267,7 +300,7 @@ export default function Sidebar() {
                 className={cn(
                   'flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-colors',
                   isActive
-                    ? 'text-purple-500'
+                    ? 'text-primary'
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >

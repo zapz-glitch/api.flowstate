@@ -1,5 +1,6 @@
 import { getApiKeys, getUser } from '@/lib/api'
 import { PLAN_LIMITS } from '@flowstate-api/db'
+import { KeyRound } from 'lucide-react'
 import ApiKeysList from './ApiKeysList'
 
 async function getApiKeysData() {
@@ -25,17 +26,21 @@ export default async function ApiKeysPage() {
   const data = await getApiKeysData()
 
   if (!data) {
-    return <div>Loading...</div>
+    return <div className="hud-label p-6">Loading…</div>
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-6xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+          <div className="hud-label mb-2 flex items-center gap-2">
+            <KeyRound className="w-3.5 h-3.5 text-primary" />
+            Credentials
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
             API Keys
           </h1>
-          <p className="text-neutral-600 dark:text-neutral-400 mt-1">
+          <p className="text-muted-foreground mt-1 text-sm">
             Manage your API keys for authentication
           </p>
         </div>

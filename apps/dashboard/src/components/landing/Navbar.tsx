@@ -47,15 +47,15 @@ export function Navbar({ onSignInClick, isSignedIn }: NavbarProps) {
           <div className="hidden md:flex items-center gap-8">
             <Link
               href="#features"
-              className="text-[15px] text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors font-mono"
             >
-              Features
+              features
             </Link>
             <Link
               href="/docs"
-              className="text-[15px] text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors font-mono"
             >
-              Docs
+              docs
             </Link>
           </div>
 
@@ -76,7 +76,7 @@ export function Navbar({ onSignInClick, isSignedIn }: NavbarProps) {
             <Button
               variant="outline"
               onClick={onSignInClick}
-              className="border-border text-foreground hover:bg-secondary"
+              className="border-border text-foreground hover:bg-secondary font-mono"
             >
               {isSignedIn ? 'Dashboard' : 'Sign in'}
             </Button>

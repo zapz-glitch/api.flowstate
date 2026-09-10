@@ -2,11 +2,9 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import {
-  Search,
   Play,
   MapPin,
   Home,
-  DollarSign,
   Star,
   AlertTriangle,
   ChevronDown,
@@ -14,13 +12,16 @@ import {
   Code,
   RefreshCw,
   StopCircle,
+  TerminalSquare,
+  Crosshair,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
 import {
   queueAnalysis,
   getJobStatus,
@@ -31,7 +32,6 @@ import {
   type CompsData,
   type ClassificationSummary,
 } from './actions'
-import { cn } from '@/lib/utils'
 import { useAnalysisWebSocket, useAnalysisPolling } from '@/hooks/use-analysis-websocket'
 import { RealtimeStatus } from '@/components/analysis/RealtimeStatus'
 import type { AnalysisState } from '@/types/analysis'
@@ -80,13 +80,13 @@ function ClassificationBadge({ classification, showConfidence = true }: { classi
   const getClassificationStyle = (type: string) => {
     switch (type) {
       case 'as_is':
-        return 'bg-orange-500/10 text-orange-700 border-orange-500/30'
+        return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
       case 'after_renovation':
-        return 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30'
+        return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
       case 'transitional':
-        return 'bg-blue-500/10 text-blue-700 border-blue-500/30'
+        return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30'
       default:
-        return 'bg-gray-500/10 text-gray-700 border-gray-500/30'
+        return 'bg-secondary text-muted-foreground border-border'
     }
   }
 
@@ -242,74 +242,87 @@ export default function AnalyzePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">API Playground</h1>
-        <p className="text-muted-foreground mt-1">Test the Flowstate API with real property data</p>
+      <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <div className="hud-label mb-2 flex items-center gap-2">
+            <TerminalSquare className="w-3.5 h-3.5 text-primary" />
+            POST /v1/analyze
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
+            Analysis Console
+          </h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Submit a target address — the engine returns valuation, comps, and a verdict.
+          </p>
+        </div>
+        {result?.success && result.timing && (
+          <div className="hud-label flex items-center gap-2">
+            <span className="hud-dot live" />
+            completed in {result.timing.durationMs}ms
+          </div>
+        )}
       </div>
 
-      {/* Input Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="w-5 h-5 text-primary" />
-            /v1/analyze
-          </CardTitle>
-          <CardDescription>Enter an address to get property details, comparables, and valuation</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-3">
-            <Input
-              type="text"
-              placeholder="123 Main St, Tampa, FL 33607"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !isRunning) {
-                  handleAnalyze()
-                }
-              }}
-              className="flex-1"
+      {/* Command input */}
+      <div className={cn('ui-panel hud-frame overflow-hidden', isRunning && 'border-primary/40')}>
+        {isRunning && <div className="scan-sweep" />}
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-border">
+          <div className="flex items-center gap-2.5">
+            <span className="hud-dot busy" />
+            <span className="hud-label">Target Input</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="skip-cache"
+              checked={skipCache}
+              onCheckedChange={setSkipCache}
             />
+            <label htmlFor="skip-cache" className="hud-label flex items-center gap-1.5 cursor-pointer">
+              <RefreshCw className="w-3 h-3" />
+              skip-cache
+            </label>
+          </div>
+        </div>
+        <div className="p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 flex items-center gap-3 rounded-md border border-border bg-secondary/60 px-4 focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/30 transition-all">
+              <span className="font-mono text-primary text-sm select-none">❯</span>
+              <input
+                type="text"
+                placeholder="123 Main St, Tampa, FL 33607"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !isRunning) {
+                    handleAnalyze()
+                  }
+                }}
+                className="flex-1 h-12 bg-transparent font-mono text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
+              />
+              {address && <Crosshair className="w-4 h-4 text-muted-foreground" />}
+            </div>
             {isRunning ? (
-              <Button variant="destructive" onClick={handleCancel}>
+              <Button variant="destructive" onClick={handleCancel} className="h-12 px-6 font-mono uppercase tracking-wider">
                 <StopCircle className="w-4 h-4 mr-2" />
-                Cancel
+                Abort
               </Button>
             ) : (
-              <Button onClick={handleAnalyze} disabled={isRunning || !address.trim()}>
-                {isRunning ? (
-                  <>
-                    <span className="animate-spin mr-2">⠋</span>
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4 mr-2" />
-                    Run
-                  </>
-                )}
+              <Button
+                onClick={handleAnalyze}
+                disabled={isRunning || !address.trim()}
+                className="h-12 px-6 font-mono uppercase tracking-wider shadow-[0_0_20px_hsl(var(--primary)/0.35)]"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                Execute
               </Button>
             )}
           </div>
-          <div className="flex items-center gap-6 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Switch
-                id="skip-cache"
-                checked={skipCache}
-                onCheckedChange={setSkipCache}
-              />
-              <Label htmlFor="skip-cache" className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer">
-                <RefreshCw className="w-3.5 h-3.5" />
-                Skip cache
-              </Label>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Real-time Progress */}
+      {/* Real-time pipeline */}
       {isRunning && (
         <RealtimeStatus
           state={analysisState}
@@ -324,22 +337,20 @@ export default function AnalyzePage() {
       {result && (
         <>
           {result.success && result.data ? (
-            <div className="space-y-6">
-              {/* Timing */}
-              {result.timing && (
-                <div className="text-sm text-muted-foreground">Completed in {result.timing.durationMs}ms</div>
-              )}
+            <div className="space-y-6 animate-in fade-in duration-500">
+              {/* Verdict banner */}
+              {result.data.valuation && <VerdictBanner valuation={result.data.valuation} />}
 
-              {/* Subject Property */}
-              {result.data.subject && <SubjectPropertyCard subject={result.data.subject} />}
+              {/* Subject + Valuation side by side */}
+              <div className="grid lg:grid-cols-2 gap-6">
+                {result.data.subject && <SubjectPropertyCard subject={result.data.subject} />}
+                {result.data.valuation && <ValuationCard valuation={result.data.valuation} />}
+              </div>
 
               {/* Risk Flags */}
               {result.data.riskFlags && result.data.riskFlags.length > 0 && (
                 <RiskFlagsCard riskFlags={result.data.riskFlags} />
               )}
-
-              {/* Valuation Summary */}
-              {result.data.valuation && <ValuationCard valuation={result.data.valuation} />}
 
               {/* Comparables */}
               {result.data.comps && <ComparablesSection comps={result.data.comps} />}
@@ -363,15 +374,90 @@ export default function AnalyzePage() {
               </Card>
             </div>
           ) : (
-            <Card className="border-red-500/20 bg-red-500/5">
+            <Card className="border-destructive/30 bg-destructive/5">
               <CardContent className="py-6">
-                <div className="text-red-500 font-medium">Error</div>
-                <div className="text-muted-foreground mt-1">{result.error}</div>
+                <div className="flex items-center gap-2 text-destructive font-medium">
+                  <AlertTriangle className="w-4 h-4" />
+                  Analysis Error
+                </div>
+                <div className="text-muted-foreground mt-1 text-sm font-mono">{result.error}</div>
               </CardContent>
             </Card>
           )}
         </>
       )}
+    </div>
+  )
+}
+
+// ─── Verdict Banner ───────────────────────────────────────────────────────────
+
+function VerdictBanner({ valuation }: { valuation: ValuationData }) {
+  const rec = valuation.recommendation?.toUpperCase() || ''
+  const isPursue = rec.includes('PURSUE') || rec.includes('BUY')
+  const isPass = rec.includes('PASS') || rec.includes('AVOID')
+
+  return (
+    <div
+      className={cn(
+        'ui-panel relative overflow-hidden p-5 sm:p-6',
+        isPursue && 'border-emerald-500/40',
+        isPass && 'border-destructive/40',
+        !isPursue && !isPass && 'border-warning/40'
+      )}
+    >
+      <div
+        className={cn(
+          'absolute inset-0 opacity-[0.07] pointer-events-none',
+          isPursue && 'bg-gradient-to-r from-emerald-500 to-transparent',
+          isPass && 'bg-gradient-to-r from-red-500 to-transparent',
+          !isPursue && !isPass && 'bg-gradient-to-r from-amber-500 to-transparent'
+        )}
+      />
+      <div className="relative flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-8">
+        <div>
+          <div className="hud-label mb-1.5">Verdict</div>
+          <div
+            className={cn(
+              'flex items-center gap-2 text-xl sm:text-2xl font-bold tracking-tight',
+              isPursue && 'text-emerald-500',
+              isPass && 'text-destructive',
+              !isPursue && !isPass && 'text-warning'
+            )}
+          >
+            {isPursue ? <TrendingUp className="w-6 h-6" /> : isPass ? <TrendingDown className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}
+            {valuation.recommendation || 'PENDING'}
+          </div>
+          {valuation.recommendationReason && (
+            <p className="text-sm text-muted-foreground mt-1 max-w-md">{valuation.recommendationReason}</p>
+          )}
+        </div>
+        <div className="flex gap-6 sm:gap-10 sm:ml-auto">
+          <div>
+            <div className="hud-label mb-1">ARV</div>
+            <div className="hud-value text-2xl sm:text-3xl font-bold text-primary glow-text">
+              {valuation.arv ? formatCurrency(valuation.arv) : '—'}
+            </div>
+          </div>
+          <div>
+            <div className="hud-label mb-1">Max Buy</div>
+            <div className="hud-value text-2xl sm:text-3xl font-bold">
+              {valuation.buyPrice ? formatCurrency(valuation.buyPrice) : '—'}
+            </div>
+          </div>
+          <div>
+            <div className="hud-label mb-1">Proj. Profit</div>
+            <div
+              className={cn(
+                'hud-value text-2xl sm:text-3xl font-bold',
+                (valuation.projectedProfit ?? 0) > 0 ? 'text-emerald-500' : 'text-destructive'
+              )}
+            >
+              {valuation.projectedProfit ? formatCurrency(valuation.projectedProfit) : '—'}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -382,52 +468,37 @@ function SubjectPropertyCard({ subject }: { subject: SubjectData }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <MapPin className="w-5 h-5 text-primary" />
-          Subject Property
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-primary" />
+            Subject Property
+          </CardTitle>
           {subject.classification && (
             <ClassificationBadge classification={subject.classification} />
           )}
-        </CardTitle>
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-5">
           <div className="col-span-2">
-            <div className="text-sm text-muted-foreground">Address</div>
+            <div className="hud-label mb-1">Address</div>
             <div className="font-medium">{subject.address || 'Unknown'}</div>
             {subject.subdivision && <div className="text-sm text-muted-foreground">{subject.subdivision}</div>}
             {subject.county && <div className="text-sm text-muted-foreground">{subject.county} County</div>}
           </div>
-          <div>
-            <div className="text-sm text-muted-foreground">Beds / Baths</div>
-            <div className="font-medium">{subject.bedsBaths || '?'}</div>
-          </div>
-          <div>
-            <div className="text-sm text-muted-foreground">Square Feet</div>
-            <div className="font-medium">{subject.squareFeet?.toLocaleString() || '?'} sqft</div>
-          </div>
-          <div>
-            <div className="text-sm text-muted-foreground">Year Built</div>
-            <div className="font-medium">{subject.yearBuilt || '?'}</div>
-          </div>
-          <div>
-            <div className="text-sm text-muted-foreground">Lot Size</div>
-            <div className="font-medium">{subject.lotSizeAcres ? `${subject.lotSizeAcres} acres` : '?'}</div>
-          </div>
+          <DataCell label="Beds / Baths" value={subject.bedsBaths || '?'} />
+          <DataCell label="Square Feet" value={subject.squareFeet ? `${subject.squareFeet.toLocaleString()} sqft` : '?'} />
+          <DataCell label="Year Built" value={subject.yearBuilt?.toString() || '?'} />
+          <DataCell label="Lot Size" value={subject.lotSizeAcres ? `${subject.lotSizeAcres} ac` : '?'} />
           {subject.lastSale && (
             <>
-              <div>
-                <div className="text-sm text-muted-foreground">Last Sale</div>
-                <div className="font-medium">${subject.lastSale.price?.toLocaleString() || '?'}</div>
-                {subject.lastSale.date && (
-                  <div className="text-xs text-muted-foreground">{subject.lastSale.date}</div>
-                )}
-              </div>
+              <DataCell
+                label="Last Sale"
+                value={subject.lastSale.price ? formatCurrency(subject.lastSale.price) : '?'}
+                sub={subject.lastSale.date || undefined}
+              />
               {subject.lastSale.pricePerSqft && (
-                <div>
-                  <div className="text-sm text-muted-foreground">$/SqFt</div>
-                  <div className="font-medium">${subject.lastSale.pricePerSqft.toFixed(0)}</div>
-                </div>
+                <DataCell label="$/SqFt" value={`$${subject.lastSale.pricePerSqft.toFixed(0)}`} />
               )}
             </>
           )}
@@ -435,22 +506,22 @@ function SubjectPropertyCard({ subject }: { subject: SubjectData }) {
 
         {/* Subject Photos */}
         {subject.photos && subject.photos.length > 0 && (
-          <div className="mt-4">
-            <div className="text-sm text-muted-foreground mb-2">Photos ({subject.photos.length})</div>
+          <div className="mt-5">
+            <div className="hud-label mb-2">Photos ({subject.photos.length})</div>
             <div className="flex gap-2 overflow-x-auto pb-2">
               {subject.photos.slice(0, 6).map((photo, i) => (
                 <img
                   key={i}
                   src={photo}
                   alt={`Subject photo ${i + 1}`}
-                  className="w-28 h-20 object-cover rounded border flex-shrink-0"
+                  className="w-28 h-20 object-cover rounded border border-border flex-shrink-0"
                   onError={(e) => {
                     ;(e.target as HTMLImageElement).style.display = 'none'
                   }}
                 />
               ))}
               {subject.photos.length > 6 && (
-                <div className="w-28 h-20 bg-muted rounded border flex items-center justify-center text-sm text-muted-foreground flex-shrink-0">
+                <div className="w-28 h-20 bg-secondary rounded border border-border flex items-center justify-center text-sm text-muted-foreground flex-shrink-0">
                   +{subject.photos.length - 6} more
                 </div>
               )}
@@ -462,13 +533,23 @@ function SubjectPropertyCard({ subject }: { subject: SubjectData }) {
   )
 }
 
+function DataCell({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div>
+      <div className="hud-label mb-1">{label}</div>
+      <div className="font-medium hud-value">{value}</div>
+      {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
+    </div>
+  )
+}
+
 // ─── Risk Flags Card ──────────────────────────────────────────────────────────
 
 function RiskFlagsCard({ riskFlags }: { riskFlags: string[] }) {
   return (
-    <Card className="border-amber-500/30 bg-amber-500/5">
+    <Card className="border-warning/40 bg-warning/5">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-amber-600">
+        <CardTitle className="flex items-center gap-2 text-warning">
           <AlertTriangle className="w-5 h-5" />
           Risk Flags
         </CardTitle>
@@ -476,7 +557,7 @@ function RiskFlagsCard({ riskFlags }: { riskFlags: string[] }) {
       <CardContent>
         <div className="flex flex-wrap gap-2">
           {riskFlags.map((flag, i) => (
-            <Badge key={i} variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/30">
+            <Badge key={i} variant="outline" className="bg-warning/10 text-warning border-warning/30 font-mono text-xs">
               {flag}
             </Badge>
           ))}
@@ -489,109 +570,50 @@ function RiskFlagsCard({ riskFlags }: { riskFlags: string[] }) {
 // ─── Valuation Card ───────────────────────────────────────────────────────────
 
 function ValuationCard({ valuation }: { valuation: ValuationData }) {
-  const getRecommendationStyle = (rec?: string) => {
-    if (!rec) return 'default'
-    const upper = rec.toUpperCase()
-    if (upper.includes('PURSUE') || upper.includes('BUY')) return 'success'
-    if (upper.includes('PASS') || upper.includes('AVOID')) return 'destructive'
-    if (upper.includes('REVIEW') || upper.includes('CAUTION')) return 'warning'
-    return 'default'
-  }
-
-  const recStyle = getRecommendationStyle(valuation.recommendation)
-
   return (
-    <Card className="border-primary/20 bg-primary/5">
+    <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <DollarSign className="w-5 h-5 text-primary" />
+          <TrendingUp className="w-5 h-5 text-primary" />
           Underwriter Valuation
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div>
-            <div className="text-sm text-muted-foreground">ARV</div>
-            <div className="text-2xl font-bold text-primary">${valuation.arv?.toLocaleString() || '?'}</div>
-            {valuation.arvPerSqft && (
-              <div className="text-xs text-muted-foreground">${valuation.arvPerSqft.toFixed(0)}/sqft</div>
-            )}
-            {valuation.arvSource && (
-              <div className="text-xs text-muted-foreground">Source: {valuation.arvSource}</div>
-            )}
-          </div>
-          <div>
-            <div className="text-sm text-muted-foreground">Max Buy Price</div>
-            <div className="text-2xl font-bold">${valuation.buyPrice?.toLocaleString() || '?'}</div>
-            {valuation.buyPricePercent && (
-              <div className="text-xs text-muted-foreground">{valuation.buyPricePercent}% of ARV</div>
-            )}
-          </div>
-          <div>
-            <div className="text-sm text-muted-foreground">Rehab Cost</div>
-            <div className="text-xl font-semibold">${valuation.rehabCost?.toLocaleString() || '?'}</div>
-            {valuation.rehabLevel && (
-              <Badge variant="outline" className="mt-1">
-                {valuation.rehabLevel}
-              </Badge>
-            )}
-            {valuation.rehabPerSqft && (
-              <div className="text-xs text-muted-foreground">${valuation.rehabPerSqft}/sqft</div>
-            )}
-          </div>
-          <div>
-            <div className="text-sm text-muted-foreground">Projected Profit</div>
-            <div className={cn('text-xl font-semibold', (valuation.projectedProfit ?? 0) > 0 ? 'text-emerald-600' : 'text-red-600')}>
-              ${valuation.projectedProfit?.toLocaleString() || '?'}
-            </div>
-            {valuation.projectedROI && (
-              <div className="text-xs text-muted-foreground">{valuation.projectedROI.toFixed(1)}% ROI</div>
-            )}
-          </div>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-5">
+          <DataCell
+            label="ARV"
+            value={valuation.arv ? formatCurrency(valuation.arv) : '?'}
+            sub={valuation.arvPerSqft ? `$${valuation.arvPerSqft.toFixed(0)}/sqft` : valuation.arvSource}
+          />
+          <DataCell
+            label="Max Buy Price"
+            value={valuation.buyPrice ? formatCurrency(valuation.buyPrice) : '?'}
+            sub={valuation.buyPricePercent ? `${valuation.buyPricePercent}% of ARV` : undefined}
+          />
+          <DataCell
+            label="Rehab Cost"
+            value={valuation.rehabCost ? formatCurrency(valuation.rehabCost) : '?'}
+            sub={valuation.rehabLevel ? `${valuation.rehabLevel}${valuation.rehabPerSqft ? ` · $${valuation.rehabPerSqft}/sqft` : ''}` : undefined}
+          />
+          <DataCell
+            label="Projected ROI"
+            value={valuation.projectedROI ? `${valuation.projectedROI.toFixed(1)}%` : '?'}
+            sub={valuation.projectedProfit ? formatCurrency(valuation.projectedProfit) : undefined}
+          />
         </div>
 
         {/* Investment Summary Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-4 pt-4 border-t">
-          {valuation.totalCosts && (
-            <div>
-              <div className="text-sm text-muted-foreground">Total Costs</div>
-              <div className="font-medium">${valuation.totalCosts.toLocaleString()}</div>
-            </div>
+        <div className="grid grid-cols-3 gap-4 mt-5 pt-4 border-t border-border">
+          {valuation.totalCosts !== undefined && (
+            <DataCell label="Total Costs" value={formatCurrency(valuation.totalCosts)} />
           )}
-          {valuation.totalInvestment && (
-            <div>
-              <div className="text-sm text-muted-foreground">Total Investment</div>
-              <div className="font-medium">${valuation.totalInvestment.toLocaleString()}</div>
-            </div>
+          {valuation.totalInvestment !== undefined && (
+            <DataCell label="Total Investment" value={formatCurrency(valuation.totalInvestment)} />
           )}
-          {valuation.wholesalePrice && (
-            <div>
-              <div className="text-sm text-muted-foreground">Wholesale Price</div>
-              <div className="font-medium">${valuation.wholesalePrice.toLocaleString()}</div>
-            </div>
+          {valuation.wholesalePrice !== undefined && (
+            <DataCell label="Wholesale" value={formatCurrency(valuation.wholesalePrice)} />
           )}
         </div>
-
-        {/* Recommendation */}
-        {valuation.recommendation && (
-          <div className="mt-4 pt-4 border-t">
-            <div className="flex items-center gap-3">
-              <Badge
-                variant={recStyle === 'success' ? 'default' : recStyle === 'destructive' ? 'destructive' : 'outline'}
-                className={cn(
-                  'text-sm px-3 py-1',
-                  recStyle === 'success' && 'bg-emerald-500',
-                  recStyle === 'warning' && 'bg-amber-500 text-amber-950'
-                )}
-              >
-                {valuation.recommendation}
-              </Badge>
-              {valuation.recommendationReason && (
-                <span className="text-sm text-muted-foreground">{valuation.recommendationReason}</span>
-              )}
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   )
@@ -617,20 +639,25 @@ function ComparablesSection({ comps }: { comps: CompsData }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <CardTitle className="flex items-center gap-2">
             <Home className="w-5 h-5 text-primary" />
-            Comparables ({comps.count || compItems.length})
+            Comparables
+            <span className="hud-value text-muted-foreground font-normal">
+              ({comps.count || compItems.length})
+            </span>
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            {comps.medianPrice && (
+              <Badge variant="outline" className="font-mono">med {formatCurrency(comps.medianPrice)}</Badge>
+            )}
+            {comps.avgPricePerSqft && (
+              <Badge variant="outline" className="font-mono">avg ${comps.avgPricePerSqft.toFixed(0)}/sqft</Badge>
+            )}
           </div>
-          {comps.avgPricePerSqft && (
-            <Badge variant="outline">Avg: ${comps.avgPricePerSqft.toFixed(0)}/sqft</Badge>
-          )}
-        </CardTitle>
-        {comps.medianPrice && (
-          <CardDescription>Median Price: ${comps.medianPrice.toLocaleString()}</CardDescription>
-        )}
+        </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-2.5">
         {compItems.map((comp, index) => {
           const isExpanded = expandedComps.has(index)
 
@@ -656,23 +683,29 @@ function CompCard({
   isExpanded: boolean
   onToggle: () => void
 }) {
+  const weightPct = comp.weightInArv !== null && comp.weightInArv !== undefined
+    ? Math.round(comp.weightInArv * 100)
+    : null
+
   return (
     <div
       className={cn(
-        'border rounded-lg transition-colors',
-        comp.isBestComp ? 'border-amber-500/50 bg-amber-500/5 ring-2 ring-amber-500/30' : 'border-border'
+        'border rounded-md transition-all overflow-hidden',
+        comp.isBestComp
+          ? 'border-amber-500/50 bg-amber-500/5 shadow-[0_0_20px_rgba(245,158,11,0.12)]'
+          : 'border-border bg-secondary/30 hover:border-primary/30'
       )}
     >
       {/* Comp Header */}
       <div className="p-4 cursor-pointer" onClick={onToggle}>
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3">
-            <div className="mt-1 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
-              {index + 1}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="mt-0.5 w-7 h-7 rounded border border-border bg-background flex items-center justify-center text-xs font-mono font-medium text-primary flex-shrink-0">
+              {String(index + 1).padStart(2, '0')}
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-medium">{comp.address || 'Unknown Address'}</span>
+                <span className="font-medium truncate">{comp.address || 'Unknown Address'}</span>
                 {comp.isBestComp && (
                   <Badge className="bg-amber-500/20 text-amber-600 border-amber-500/30">
                     <Star className="w-3 h-3 mr-1" />
@@ -695,44 +728,58 @@ function CompCard({
                   <ClassificationBadge classification={comp.classification} showConfidence={false} />
                 )}
               </div>
-              <div className="text-sm text-muted-foreground mt-1">
-                {comp.distanceMiles !== undefined && comp.distanceMiles !== null && `${comp.distanceMiles.toFixed(2)} mi away`}
+              <div className="flex gap-3 mt-1.5 text-xs text-muted-foreground font-mono flex-wrap">
+                <span>{comp.bedsBaths || '?'}</span>
+                <span>{comp.squareFeet?.toLocaleString() || '?'} sqft</span>
+                <span>blt {comp.yearBuilt || '?'}</span>
+                {comp.distanceMiles !== undefined && comp.distanceMiles !== null && (
+                  <span>{comp.distanceMiles.toFixed(2)} mi</span>
+                )}
+                {comp.saleDate && <span>{new Date(comp.saleDate).toLocaleDateString()}</span>}
+                {comp.qualityScore !== undefined && comp.qualityScore !== null && (
+                  <span className="text-primary">Q{comp.qualityScore}</span>
+                )}
               </div>
             </div>
           </div>
-          <div className="text-right">
-            <div className="font-bold text-lg">${comp.salePrice?.toLocaleString() || '?'}</div>
+          <div className="text-right flex-shrink-0">
+            <div className="hud-value font-bold text-lg">
+              {comp.salePrice ? formatCurrency(comp.salePrice) : '?'}
+            </div>
             {comp.pricePerSqft && (
-              <div className="text-xs text-muted-foreground">${comp.pricePerSqft.toFixed(0)}/sqft</div>
+              <div className="text-xs text-muted-foreground font-mono">${comp.pricePerSqft.toFixed(0)}/sf</div>
             )}
             {comp.adjustedPrice && comp.salePrice !== comp.adjustedPrice && (
-              <div className="text-xs text-emerald-600">Adj: ${comp.adjustedPrice.toLocaleString()}</div>
+              <div className="text-xs text-emerald-500 font-mono">adj {formatCurrency(comp.adjustedPrice)}</div>
             )}
-            <div className="flex items-center justify-end mt-1">
+            <div className="flex items-center justify-end mt-1 text-muted-foreground">
               {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             </div>
           </div>
         </div>
 
-        {/* Quick stats row */}
-        <div className="flex gap-4 mt-3 text-sm text-muted-foreground flex-wrap">
-          <span>{comp.bedsBaths || '?'}</span>
-          <span>{comp.squareFeet?.toLocaleString() || '?'} sqft</span>
-          <span>Built {comp.yearBuilt || '?'}</span>
-          {comp.saleDate && <span>Sold {new Date(comp.saleDate).toLocaleDateString()}</span>}
-          {comp.qualityScore !== undefined && comp.qualityScore !== null && (
-            <span className="text-primary">Quality: {comp.qualityScore}/100</span>
-          )}
-        </div>
+        {/* ARV weight bar */}
+        {weightPct !== null && (
+          <div className="mt-3 flex items-center gap-3">
+            <div className="hud-label w-16 flex-shrink-0">ARV wt.</div>
+            <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-500"
+                style={{ width: `${Math.min(100, weightPct)}%` }}
+              />
+            </div>
+            <span className="text-xs font-mono text-primary w-10 text-right">{weightPct}%</span>
+          </div>
+        )}
       </div>
 
       {/* Expanded Details */}
       {isExpanded && (
-        <div className="border-t px-4 py-3 bg-background/50 space-y-3">
+        <div className="border-t border-border px-4 py-4 bg-background/40 space-y-4">
           {/* Subdivision */}
           {comp.subdivision && (
             <div>
-              <div className="text-sm font-medium text-muted-foreground">Subdivision</div>
+              <div className="hud-label mb-1">Subdivision</div>
               <div className="text-sm">{comp.subdivision}</div>
             </div>
           )}
@@ -740,23 +787,18 @@ function CompCard({
           {/* Classification Details */}
           {comp.classification && (
             <div>
-              <div className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <div className="hud-label mb-1 flex items-center gap-2">
                 Classification
                 <ClassificationBadge classification={comp.classification} />
               </div>
               <div className="text-sm text-foreground/80 mt-1">{comp.classification.reasoning}</div>
-              {comp.weightInArv !== null && comp.weightInArv !== undefined && (
-                <div className="text-xs text-muted-foreground mt-1">
-                  ARV Weight: {(comp.weightInArv * 100).toFixed(1)}%
-                </div>
-              )}
             </div>
           )}
 
           {/* Selection Reason / Analysis */}
           {comp.selectionReason && (
             <div>
-              <div className="text-sm font-medium text-muted-foreground">
+              <div className="hud-label mb-1">
                 {comp.isBestComp ? 'Why Best Comp' : 'Analysis'}
               </div>
               <div className="text-sm text-foreground/80">{comp.selectionReason}</div>
@@ -766,10 +808,10 @@ function CompCard({
           {/* Key Features */}
           {comp.keyFeatures && comp.keyFeatures.length > 0 && (
             <div>
-              <div className="text-sm font-medium text-muted-foreground mb-1">Key Features</div>
-              <div className="flex flex-wrap gap-1">
+              <div className="hud-label mb-1.5">Key Features</div>
+              <div className="flex flex-wrap gap-1.5">
                 {comp.keyFeatures.map((feature, i) => (
-                  <Badge key={i} variant="outline" className="text-xs">
+                  <Badge key={i} variant="outline" className="text-xs font-mono">
                     {feature}
                   </Badge>
                 ))}
@@ -779,55 +821,52 @@ function CompCard({
 
           {/* Appraisal Rules */}
           {comp.appraisalRules && (
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-muted-foreground">Appraisal Rules</div>
+            <div className="space-y-2.5">
+              <div className="hud-label">Appraisal Rules</div>
 
               {/* Filters */}
-              <div className="space-y-1">
-                <div className="text-xs font-medium text-muted-foreground">Filters Applied</div>
-                <div className="grid gap-1">
-                  {comp.appraisalRules.filters.map((filter, i) => (
-                    <div
-                      key={i}
-                      className={cn(
-                        'text-xs px-2 py-1 rounded flex items-center justify-between',
-                        filter.passed ? 'bg-emerald-500/10 text-emerald-700' : 'bg-red-500/10 text-red-700'
+              <div className="grid gap-1">
+                {comp.appraisalRules.filters.map((filter, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      'text-xs px-2.5 py-1.5 rounded flex items-center justify-between font-mono',
+                      filter.passed ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'
+                    )}
+                  >
+                    <span>{formatFilterType(filter.type)}</span>
+                    <span>
+                      {filter.passed ? '✓' : '✗'}
+                      {filter.actualValue !== null && filter.actualValue !== undefined && (
+                        <span className="ml-1 opacity-70">
+                          ({String(filter.actualValue)}{filter.threshold ? ` / ${filter.threshold}` : ''})
+                        </span>
                       )}
-                    >
-                      <span className="font-medium">{formatFilterType(filter.type)}</span>
-                      <span>
-                        {filter.passed ? '✓' : '✗'}
-                        {filter.actualValue !== null && filter.actualValue !== undefined && (
-                          <span className="ml-1 opacity-70">
-                            ({String(filter.actualValue)}{filter.threshold ? ` / ${filter.threshold}` : ''})
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                    </span>
+                  </div>
+                ))}
               </div>
 
               {/* Adjustments */}
               {comp.appraisalRules.adjustments.length > 0 && (
                 <div className="space-y-1">
-                  <div className="text-xs font-medium text-muted-foreground">Price Adjustments</div>
+                  <div className="hud-label">Price Adjustments</div>
                   <div className="grid gap-1">
                     {comp.appraisalRules.adjustments.map((adj, i) => (
                       <div
                         key={i}
-                        className="text-xs px-2 py-1 rounded bg-blue-500/10 text-blue-700 flex items-center justify-between"
+                        className="text-xs px-2.5 py-1.5 rounded bg-secondary text-foreground/80 flex items-center justify-between font-mono"
                       >
-                        <span className="font-medium">{formatAdjustmentType(adj.type)}</span>
-                        <span className={adj.amount >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                        <span>{formatAdjustmentType(adj.type)}</span>
+                        <span className={adj.amount >= 0 ? 'text-emerald-500' : 'text-red-500'}>
                           {adj.amount >= 0 ? '+' : ''}{formatCurrency(adj.amount)}
                         </span>
                       </div>
                     ))}
                   </div>
-                  <div className="text-xs text-right text-muted-foreground">
+                  <div className="text-xs text-right text-muted-foreground font-mono">
                     Total Adjustment:{' '}
-                    <span className={comp.appraisalRules.totalAdjustment >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                    <span className={comp.appraisalRules.totalAdjustment >= 0 ? 'text-emerald-500' : 'text-red-500'}>
                       {comp.appraisalRules.totalAdjustment >= 0 ? '+' : ''}
                       {formatCurrency(comp.appraisalRules.totalAdjustment)}
                     </span>
@@ -840,21 +879,21 @@ function CompCard({
           {/* Photos */}
           {comp.photos && comp.photos.length > 0 && (
             <div>
-              <div className="text-sm font-medium mb-2">Photos</div>
+              <div className="hud-label mb-2">Photos</div>
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {comp.photos.slice(0, 5).map((photo, i) => (
                   <img
                     key={i}
                     src={photo}
                     alt={`Comp photo ${i + 1}`}
-                    className="w-24 h-16 object-cover rounded border flex-shrink-0"
+                    className="w-24 h-16 object-cover rounded border border-border flex-shrink-0"
                     onError={(e) => {
                       ;(e.target as HTMLImageElement).style.display = 'none'
                     }}
                   />
                 ))}
                 {comp.photos.length > 5 && (
-                  <div className="w-24 h-16 bg-muted rounded border flex items-center justify-center text-sm text-muted-foreground flex-shrink-0">
+                  <div className="w-24 h-16 bg-secondary rounded border border-border flex items-center justify-center text-sm text-muted-foreground flex-shrink-0">
                     +{comp.photos.length - 5} more
                   </div>
                 )}

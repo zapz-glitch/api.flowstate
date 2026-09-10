@@ -79,10 +79,10 @@ function ResetPasswordForm() {
       <div className="w-full max-w-md">
         <div className="relative rounded-3xl shadow-2xl overflow-hidden">
           {/* Liquid Glass Background Layers */}
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-violet-500/10 to-pink-600/20" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-accent/10 to-accent-secondary/15" />
           <div className="absolute inset-0 backdrop-blur-xl bg-black/50" />
           <div className="absolute -top-20 -left-20 w-40 h-40 bg-gradient-radial from-white/10 via-white/5 to-transparent rounded-full blur-2xl" />
-          <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-gradient-radial from-purple-500/15 via-purple-400/5 to-transparent rounded-full blur-2xl" />
+          <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-gradient-radial from-primary/15 via-primary/5 to-transparent rounded-full blur-2xl" />
           <div className="absolute inset-0 rounded-3xl border border-white/10" />
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
@@ -134,7 +134,7 @@ function ResetPasswordForm() {
                   </p>
                   <Link
                     href="/"
-                    className="inline-flex items-center gap-2 text-purple-400 hover:underline font-medium"
+                    className="inline-flex items-center gap-2 text-primary hover:underline font-medium"
                   >
                     Go to sign in
                   </Link>
@@ -152,7 +152,7 @@ function ResetPasswordForm() {
                   </p>
                   <Link
                     href="/"
-                    className="inline-flex items-center gap-2 py-2.5 px-6 bg-gradient-to-r from-purple-500 to-violet-600 text-white font-medium rounded-xl hover:opacity-90 transition-all shadow-lg shadow-purple-500/25"
+                    className="inline-flex items-center gap-2 py-2.5 px-6 bg-gradient-to-r from-primary to-accent text-white font-medium rounded-xl hover:opacity-90 transition-all shadow-lg shadow-[0_8px_30px_hsl(var(--primary)/0.3)]"
                   >
                     Go to sign in
                   </Link>
@@ -179,7 +179,7 @@ function ResetPasswordForm() {
                         onChange={(e) => setPassword(e.target.value)}
                         required
                         minLength={8}
-                        className="w-full px-4 py-2.5 bg-white/10 border border-white/10 rounded-xl text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-colors backdrop-blur-sm"
+                        className="w-full px-4 py-2.5 bg-white/10 border border-white/10 rounded-xl text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-colors backdrop-blur-sm"
                         placeholder="••••••••"
                       />
                     </div>
@@ -196,7 +196,7 @@ function ResetPasswordForm() {
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         required
                         minLength={8}
-                        className="w-full px-4 py-2.5 bg-white/10 border border-white/10 rounded-xl text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-colors backdrop-blur-sm"
+                        className="w-full px-4 py-2.5 bg-white/10 border border-white/10 rounded-xl text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-colors backdrop-blur-sm"
                         placeholder="••••••••"
                       />
                     </div>
@@ -207,7 +207,7 @@ function ResetPasswordForm() {
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className="w-full py-2.5 px-4 bg-gradient-to-r from-purple-500 to-violet-600 text-white font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 shadow-lg shadow-purple-500/25"
+                      className="w-full py-2.5 px-4 bg-gradient-to-r from-primary to-accent text-white font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 shadow-lg shadow-[0_8px_30px_hsl(var(--primary)/0.3)]"
                     >
                       {isLoading ? (
                         <>
@@ -224,7 +224,7 @@ function ResetPasswordForm() {
                   <p className="text-sm text-neutral-400 text-center mt-4">
                     <Link
                       href="/"
-                      className="text-purple-400 hover:underline font-medium"
+                      className="text-primary hover:underline font-medium"
                     >
                       Back to sign in
                     </Link>
@@ -243,7 +243,7 @@ export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     }>
       <ResetPasswordForm />

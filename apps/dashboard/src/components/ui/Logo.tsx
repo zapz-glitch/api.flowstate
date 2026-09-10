@@ -17,18 +17,17 @@ export function Logo({ className, showText = true, size = 'md' }: LogoProps) {
 
   return (
     <div className={cn('flex items-center gap-2.5', className)}>
-      {/* Flowstate Icon - Purple gradient with layered shape */}
       <div className={cn(
-        'rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center',
+        'rounded-md bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-[0_0_16px_hsl(var(--primary)/0.35)]',
         sizes[size].icon
       )}>
-        <svg className={cn('text-white', sizes[size].svg)} fill="currentColor" viewBox="0 0 24 24">
+        <svg className={cn('text-primary-foreground', sizes[size].svg)} fill="currentColor" viewBox="0 0 24 24">
           <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
         </svg>
       </div>
       {showText && (
         <span className={cn('font-semibold tracking-tight text-foreground', sizes[size].text)}>
-          <span className="text-purple-500 dark:text-purple-400">api</span>.flowstate
+          <span className="text-primary">api</span>.flowstate
         </span>
       )}
     </div>
@@ -38,10 +37,10 @@ export function Logo({ className, showText = true, size = 'md' }: LogoProps) {
 export function LogoIcon({ className }: { className?: string }) {
   return (
     <div className={cn(
-      'w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center',
+      'w-8 h-8 rounded-md bg-gradient-to-br from-primary to-accent flex items-center justify-center',
       className
     )}>
-      <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+      <svg className="w-5 h-5 text-primary-foreground" fill="currentColor" viewBox="0 0 24 24">
         <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
       </svg>
     </div>

@@ -16,6 +16,9 @@ interface LogsFiltersProps {
   }
 }
 
+const inputCls =
+  'w-full px-3 py-2 text-sm bg-secondary/60 border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50'
+
 export function LogsFilters({ apiKeys, initialParams }: LogsFiltersProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -51,19 +54,17 @@ export function LogsFilters({ apiKeys, initialParams }: LogsFiltersProps) {
   const hasFilters = endpoint || status || apiKeyId || startDate || endDate || search
 
   return (
-    <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-4">
+    <div className="ui-panel p-4">
       <div className="flex items-center gap-2 mb-4">
-        <Filter className="w-4 h-4 text-neutral-500" />
-        <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-          Filters
-        </span>
+        <Filter className="w-4 h-4 text-muted-foreground" />
+        <span className="hud-label">Filters</span>
         {hasFilters && (
           <button
             onClick={clearFilters}
-            className="ml-auto flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
+            className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground font-mono"
           >
             <X className="w-3 h-3" />
-            Clear all
+            clear all
           </button>
         )}
       </div>
@@ -71,31 +72,27 @@ export function LogsFilters({ apiKeys, initialParams }: LogsFiltersProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Search by address */}
         <div>
-          <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1.5">
-            Property Address
-          </label>
+          <label className="hud-label block mb-1.5">Property Address</label>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
               placeholder="Search address..."
-              className="w-full pl-9 pr-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400"
+              className={`${inputCls} pl-9`}
             />
           </div>
         </div>
 
         {/* Endpoint filter */}
         <div>
-          <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1.5">
-            Endpoint
-          </label>
+          <label className="hud-label block mb-1.5">Endpoint</label>
           <select
             value={endpoint}
             onChange={(e) => setEndpoint(e.target.value)}
-            className="w-full px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400"
+            className={inputCls}
           >
             <option value="">All endpoints</option>
             <option value="/v1/analyze">/v1/analyze</option>
@@ -108,13 +105,11 @@ export function LogsFilters({ apiKeys, initialParams }: LogsFiltersProps) {
 
         {/* Status filter */}
         <div>
-          <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1.5">
-            Status
-          </label>
+          <label className="hud-label block mb-1.5">Status</label>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="w-full px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400"
+            className={inputCls}
           >
             <option value="">All statuses</option>
             <option value="200">2xx Success</option>
@@ -125,13 +120,11 @@ export function LogsFilters({ apiKeys, initialParams }: LogsFiltersProps) {
 
         {/* API Key filter */}
         <div>
-          <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1.5">
-            API Key
-          </label>
+          <label className="hud-label block mb-1.5">API Key</label>
           <select
             value={apiKeyId}
             onChange={(e) => setApiKeyId(e.target.value)}
-            className="w-full px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400"
+            className={inputCls}
           >
             <option value="">All keys</option>
             {apiKeys.map((key) => (
@@ -144,26 +137,22 @@ export function LogsFilters({ apiKeys, initialParams }: LogsFiltersProps) {
 
         {/* Date range */}
         <div>
-          <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1.5">
-            Start Date
-          </label>
+          <label className="hud-label block mb-1.5">Start Date</label>
           <input
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="w-full px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400"
+            className={inputCls}
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1.5">
-            End Date
-          </label>
+          <label className="hud-label block mb-1.5">End Date</label>
           <input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="w-full px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400"
+            className={inputCls}
           />
         </div>
       </div>
@@ -172,9 +161,9 @@ export function LogsFilters({ apiKeys, initialParams }: LogsFiltersProps) {
       <div className="mt-4 flex justify-end">
         <button
           onClick={applyFilters}
-          className="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
+          className="px-5 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-md transition-all font-mono uppercase tracking-wider"
         >
-          Apply Filters
+          Apply
         </button>
       </div>
     </div>
